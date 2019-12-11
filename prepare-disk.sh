@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Prepare a bootable vhd disk for a copy content from a VMware ESXi ISO
+# Prepare a bootable made vhd disk with copy content from a VMware ESXi ISO
 # 
 #
 # History
@@ -14,7 +14,7 @@ export DEVICE1="/dev/sdc1"
 export DEVICE2="/dev/sdc2"
 export DEVICE3="/dev/sdc3"
 
-tdnf install -y tar wget curl
+tdnf install -y tar wget curl sed
 
 
 # disk partitioning
@@ -35,10 +35,11 @@ echo -e "o\nn\np\n1\n\n\nw" | fdisk $DEVICE
 # Press [w] to write the changes to disk.
 echo -e "t\nc\nc\na\nw" | fdisk $DEVICE
 
+read -rsp $'Press enter to continue...\n'
 
 # format partition as FAT32. First configure packages to make run msdos tools for Linux
 cd /root
-tdnf install -y syslinux dosfstools glibc-iconv autoconf automake binutils diffutils gawk gcc glib-devel glibc-devel gzip libtool linux-api-headers make ncurses-devel sed util-linux-devel zlib-devel
+tdnf install -y syslinux dosfstools glibc-iconv autoconf automake binutils diffutils gawk gcc glib-devel glibc-devel gzip libtool linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 # install Msdos tools for Linux
 wget ftp://ftp.gnu.org/gnu/mtools/mtools-4.0.23.tar.gz
 tar -xzvf mtools-4.0.23.tar.gz
@@ -52,8 +53,9 @@ make install
 cd /root
 rm -r ./mtools-4.0.23
 rm mtools-4.0.23.tar.gz
-tdnf remove -y syslinux dosfstools glibc-iconv autoconf automake binutils diffutils gawk gcc glib-devel glibc-devel gzip libtool linux-api-headers make ncurses-devel sed util-linux-devel zlib-devel
+# tdnf remove -y syslinux dosfstools glibc-iconv autoconf automake binutils diffutils gawk gcc glib-devel glibc-devel gzip libtool linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 
+read -rsp $'Press enter to continue...\n'
 
 # install bootloader
 # ESXi uses Syslinux 3.86. See https://pubs.vmware.com/vsphere-50/index.jsp?topic=%2Fcom.vmware.vsphere.upgrade.doc_50%2FGUID-33C3E7D5-20D0-4F84-B2E3-5CD33D32EAA8.html
@@ -69,6 +71,7 @@ cd /root
 rm -r ./syslinux-3.86
 rm syslinux-3.86.tar.xz
 
+read -rsp $'Press enter to continue...\n'
 
 # Download ESXi ISO, mount and copy content to disk
 cd /root
