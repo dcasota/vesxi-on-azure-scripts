@@ -9,10 +9,10 @@
 
 cd /root
 
-export DEVICE=/dev/sdc
-export DEVICE1=/dev/sdc1
-export DEVICE2=/dev/sdc2
-export DEVICE3=/dev/sdc3
+export DEVICE="/dev/sdc"
+export DEVICE1="/dev/sdc1"
+export DEVICE2="/dev/sdc2"
+export DEVICE3="/dev/sdc3"
 
 tdnf install -y tar wget curl
 
