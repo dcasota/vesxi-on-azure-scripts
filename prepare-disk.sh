@@ -53,7 +53,6 @@ make install
 cd /root
 rm -r ./mtools-4.0.23
 rm mtools-4.0.23.tar.gz
-tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 
 
 # install bootloader
@@ -69,7 +68,7 @@ cat ./mbr/mbr.bin > $DEVICE
 cd /root
 rm -r ./syslinux-3.86
 rm syslinux-3.86.tar.xz
-
+tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 
 # Download ESXi ISO, mount and copy content to disk
 cd /root
@@ -118,4 +117,4 @@ sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel text nofb com1_baud=115
 cd /root
 umount $VHDMOUNT
 rm -r $VHDMOUNT
-tdnf remove -y syslinux dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
+
