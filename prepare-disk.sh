@@ -13,7 +13,7 @@ export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
 
 
-tdnf install -y tar wget curl sed
+tdnf install -y tar wget curl sed syslinux
 
 
 # disk partitioning
@@ -39,7 +39,7 @@ echo -e "t\nc\nc\na\nw" | fdisk $DEVICE
 
 # format partition as FAT32. First configure packages to make run msdos tools for Linux
 cd /root
-tdnf install -y syslinux dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
+tdnf install -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 # install Msdos tools for Linux
 wget ftp://ftp.gnu.org/gnu/mtools/mtools-4.0.23.tar.gz
 tar -xzvf mtools-4.0.23.tar.gz
@@ -53,6 +53,7 @@ make install
 cd /root
 rm -r ./mtools-4.0.23
 rm mtools-4.0.23.tar.gz
+tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 
 
 # install bootloader
@@ -88,8 +89,14 @@ GOOGLEDRIVEFILEID="1NNrj7MTIk-xNMtEMEz9AwTvrlRtm2jyY"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
+# Copy ISO data
 mount -o loop ./$ISOFILENAME $ESXICD
 cp -r $ESXICD/* $VHDMOUNT
+# Cleanup
+umount $ESXICD
+rm -r $ESXICD
+rm ./$ISOFILENAME
+
 # copy these two files as they are necessary for boot.cfg
 cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
 cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
@@ -109,9 +116,6 @@ cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
 sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none cdromBoot/' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 #cleanup
 cd /root
-umount $ESXICD
-rm -r $ESXICD
 umount $VHDMOUNT
 rm -r $VHDMOUNT
-rm ./$ISOFILENAME
 tdnf remove -y syslinux dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
