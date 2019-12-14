@@ -80,13 +80,13 @@ mkdir $ESXICD
 
 # Direct Download
 # ISOFILENAME="VMware-VMvisor-Installer-6.5.0.update03-14320405.x86_64-DellEMC_Customized-A03.iso"
-#curl -O -J -L https://dl.dell.com/FOLDER05925371M/1/$ISOFILENAME
+# curl -O -J -L https://dl.dell.com/FOLDER05925371M/1/$ISOFILENAME
 
 # Download using a Google Drive Download Link
 ISOFILENAME="ESXi-6.5.0-20191203001-standard-customized.iso"
 GOOGLEDRIVEFILEID="1NNrj7MTIk-xNMtEMEz9AwTvrlRtm2jyY"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
-wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $URL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
 mount -o loop ./$ISOFILENAME $ESXICD
 cp -r $ESXICD/* $VHDMOUNT
