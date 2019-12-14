@@ -1,10 +1,15 @@
 #!/bin/sh
 #
-# Prepare a bootable made vhd disk with copy content from a VMware ESXi ISO
+# Prepare a vhd data disk device as bootable VMware ESXi Hypervisor
 # 
 #
 # History
 # 0.1  10.12.2019   dcasota  UNFINISHED! WORK IN PROGRES!
+#
+# Prerequisites:
+#    - VMware Photon OS 3.0
+#    - Run as root
+#
 #
 
 cd /root
@@ -15,8 +20,30 @@ export DEVICE1="/dev/sdc1"
 
 tdnf install -y tar wget curl sed syslinux
 
+# download VMware ESXi installable
+#---------------------------------
+# Option #1: ESXi Customizer
+# tdnf install -y powershell
+# pwsh -c "install-module VMware.PowerCLI -force"
+# wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
+# .\ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
+# TODO copy Mellanox offline bundle to ./driver-offline-bundle
+# .\ESXi-Customizer-PS-v2.6.0.ps1 -izip ./ESXi-6.5.0-20191203001-standard.zip -v65 -pkgDir ./driver-offline-bundle
+# tdnf remove -y powershell
+
+# Option #2: Download from Vendor URL
+# ISOFILENAME="VMware-VMvisor-Installer-6.5.0.update03-14320405.x86_64-DellEMC_Customized-A03.iso"
+# curl -O -J -L https://dl.dell.com/FOLDER05925371M/1/$ISOFILENAME
+
+# Option #3: Download from a Google Drive Download Link
+ISOFILENAME="ESXi-6.5.0-20191203001-standard-customized.iso"
+GOOGLEDRIVEFILEID="1wRj3kdFvKG_2n_YiDkShVn9-_JeJxPWb"
+GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
+
 
 # disk partitioning
+#------------------
 # delete partitions
 # export DEVICE2="/dev/sdc2"
 # export DEVICE3="/dev/sdc3"
@@ -37,10 +64,11 @@ echo -e "o\nn\np\n1\n\n\nw" | fdisk $DEVICE
 echo -e "t\nc\nc\na\nw" | fdisk $DEVICE
 
 
-# format partition as FAT32. First configure packages to make run msdos tools for Linux
+# format partition as FAT32
+#--------------------------
 cd /root
+# First configure packages to make run Msdos tools for Linux
 tdnf install -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
-# install Msdos tools for Linux
 wget ftp://ftp.gnu.org/gnu/mtools/mtools-4.0.23.tar.gz
 tar -xzvf mtools-4.0.23.tar.gz
 cd ./mtools-4.0.23
@@ -56,6 +84,7 @@ rm mtools-4.0.23.tar.gz
 
 
 # install bootloader
+#-------------------
 # ESXi uses Syslinux 3.86. See https://pubs.vmware.com/vsphere-50/index.jsp?topic=%2Fcom.vmware.vsphere.upgrade.doc_50%2FGUID-33C3E7D5-20D0-4F84-B2E3-5CD33D32EAA8.html
 cd /root
 curl -O -J -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/3.xx/syslinux-3.86.tar.xz
@@ -71,22 +100,13 @@ rm syslinux-3.86.tar.xz
 tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 
 # Download ESXi ISO, mount and copy content to disk
+#--------------------------------------------------
 cd /root
 VHDMOUNT=/vhdmount
 mkdir $VHDMOUNT
 mount $DEVICE1 $VHDMOUNT
 ESXICD=/esxicd
 mkdir $ESXICD
-
-# Direct Download
-# ISOFILENAME="VMware-VMvisor-Installer-6.5.0.update03-14320405.x86_64-DellEMC_Customized-A03.iso"
-# curl -O -J -L https://dl.dell.com/FOLDER05925371M/1/$ISOFILENAME
-
-# Download using a Google Drive Download Link
-ISOFILENAME="ESXi-6.5.0-20191203001-standard-customized.iso"
-GOOGLEDRIVEFILEID="1NNrj7MTIk-xNMtEMEz9AwTvrlRtm2jyY"
-GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
-wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
 # Copy ISO data
 mount -o loop ./$ISOFILENAME $ESXICD
@@ -96,7 +116,9 @@ umount $ESXICD
 rm -r $ESXICD
 rm ./$ISOFILENAME
 
-# copy these two files as they are necessary for boot.cfg
+# Enable serial console redirection
+#----------------------------------
+#  copy these two files as they are necessary for boot.cfg
 cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
 cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
 # On Azure install ESXi via serial port.
