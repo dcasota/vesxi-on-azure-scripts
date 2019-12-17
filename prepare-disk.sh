@@ -27,7 +27,7 @@ tdnf install -y tar wget curl sed syslinux
 # pwsh -c "install-module VMware.PowerCLI -force"
 # wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
 # .\ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
-# TODO copy Mellanox offline bundle to ./driver-offline-bundle
+# TODO download and inject Mellanox offline bundle
 # .\ESXi-Customizer-PS-v2.6.0.ps1 -izip ./ESXi-6.5.0-20191203001-standard.zip -v65 -pkgDir ./driver-offline-bundle
 # tdnf remove -y powershell
 
@@ -51,7 +51,7 @@ wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download
 # umount $DEVICE2
 # umount $DEVICE3
 # Press [d] to delete existing partitions. d 1 d 2 d
-# echo -e "d\n1\nd\n2\nd\nw" | fdisk $DEVICE
+echo -e "d\n1\nd\n2\nd\nw" | fdisk $DEVICE
 # create partition
 # Press [o] to create a new empty DOS partition table.
 # Press [n], [p] and press Enter 3 times to accept the default settings. This step creates a primary partition for you.
