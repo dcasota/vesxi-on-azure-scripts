@@ -1,4 +1,4 @@
-Provision a VMware ESXi VM on Azure.
+# Provision a VMware ESXi VM on Azure
 
 VMware ESXi, the datacenter type-1 hypervisor for many guest OS has been established for more than fifteen years.
 Thanks to fabrics achievements, customers can provision their compute or storage hardware easily and securely from public cloud providers or onpremise.
