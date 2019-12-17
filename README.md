@@ -1,5 +1,7 @@
 # Provision a VMware ESXi VM on Azure
 
+![ESXi67](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXi67.png)
+
 VMware ESXi, the datacenter type-1 hypervisor for many guest OS has been established for more than fifteen years.
 Thanks to fabrics achievements, customers can provision their compute or storage hardware easily and securely from public cloud providers or onpremise.
 Reliability, scalability, performance were also implemented for installations on Microsoft Azure and on Hyper-V.
