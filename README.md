@@ -24,7 +24,7 @@ VMware ESXi usually is delivered as an ISO file. An Azure VM cannot attach an IS
   5. install Syslinux bootlader 3.86 for ESXi on the data disk
   6. mount and copy ESXi content to the data disk
   7. enable serial console redirection
-  ```prepare-disk.sh``` does 2-7 for you. Step 1 is accomplished within the script ```create-AzVM-vESXi_usingPhotonOS.ps1```.
+  ```prepare-disk.sh``` does step 2-7 for you. ```create-AzVM-vESXi_usingPhotonOS.ps1``` provides a solution for the first step.
   
   
  # ```create-AzVM-vESXi_usingPhotonOS.ps1```
