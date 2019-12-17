@@ -9,7 +9,8 @@
 # Prerequisites:
 #    - VMware Photon OS 3.0
 #    - Run as root
-#
+#    - attached disk /dev/sdc
+#    - Download URL for ESXi
 #
 
 cd /root
@@ -99,8 +100,8 @@ rm -r ./syslinux-3.86
 rm syslinux-3.86.tar.xz
 tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 
-# Download ESXi ISO, mount and copy content to disk
-#--------------------------------------------------
+# Mount and copy content to disk
+#-------------------------------
 cd /root
 VHDMOUNT=/vhdmount
 mkdir $VHDMOUNT
