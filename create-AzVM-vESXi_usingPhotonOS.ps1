@@ -238,10 +238,6 @@ if (-not ([string]::IsNullOrEmpty($VM)))
 		# shutdown VM and deallocate it for the conversion to managed disks
 		Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
 
-        #Enable nested virtualization settings
-        Set-VMProcessor -Name $vmName -ExposeVirtualizationExtensions $true
-        Get-VMNetworkAdapter -VMName $vmName | Set-VMNetworkAdapter -MacAddressSpoofing On
-
 		# Convert to managed disks https://docs.microsoft.com/en-us/azure/virtual-machines/windows/convert-unmanaged-to-managed-disks
 		ConvertTo-AzVMManagedDisk -ResourceGroupName $ResourceGroupName -VMName $vmName
 		# Starts VM automatically
