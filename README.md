@@ -7,9 +7,9 @@ Thanks to fabrics achievements, customers can provision their compute or storage
 Reliability, scalability, performance were also implemented for installations on Microsoft Azure and on Hyper-V.
 A 'type-1 hypervisor running in a VM on top of a type-1 hypervisor' scenario is not supported. Though, some nested hypervisor configurations are technically possible. Automation&Integration engineers often uses nested hypervisor labs to test their kickstart/setup/configure scripts without the need of tests always allocating realworld physical hardware.
 
-Nested ESXi hypervisor lab on VMware workstation or on VMware ESXi are popular and community-driven. If you want to go for more deeper hypervisor software learning, for easily run software labs and without the need to spec, order, rack, stack, cable, image and deploy hardware, nested hypervisor labs are a useful addition. If you run into issues with a nested lab, give up or try to fix it on your own support.
-See https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization
-See https://kb.vmware.com/s/article/2009916
+Nested ESXi hypervisor lab on VMware workstation or on VMware ESXi are popular and community-driven. If you want to go for more deeper hypervisor software learning, for easily run software labs and without the need to spec, order, rack, stack, cable, image and deploy hardware, nested hypervisor labs are a useful addition. If you run into issues with a nested lab, give up or try to fix it on your own support. See
+  - https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization
+  - https://kb.vmware.com/s/article/2009916
 
 This lab project contains scripts for provisioning VMware ESXi as Microsoft Azure VM. The repo contains several scripts.
   - prepare-disk.sh
