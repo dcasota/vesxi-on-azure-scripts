@@ -5,10 +5,10 @@
 VMware ESXi, the datacenter type-1 hypervisor for many guest OS has been established for more than fifteen years.
 Thanks to fabrics achievements, customers can provision their compute or storage hardware easily and securely from public cloud providers or onpremise.
 
-Reliability, scalability, performance were also implemented for installations on Microsoft Azure and on Hyper-V.
-A 'type-1 hypervisor running in a VM on top of a type-1 hypervisor' scenario is not supported. Though, some nested hypervisor configurations are technically possible. Automation&Integration engineers often uses nested hypervisor labs to test their kickstart/setup/configure scripts without the need of tests always allocating realworld physical hardware.
+Reliability, scalability, performance were achieved for functions as well as for compute resources on Microsoft Azure/Hyper-V, too.
+A 'type-1 hypervisor running in a VM on top of a type-1 hypervisor' scenario is not supported. Though, some nested hypervisor configurations are technically possible. Automation&Integration engineers often uses nested hypervisor labs to test their kickstart/setup/configuration scripts without the need of tests always with allocating realworld physical hardware.
 
-Nested ESXi hypervisor lab on VMware workstation or on VMware ESXi are popular and community-driven. If you want to go for more deeper hypervisor software learning, for easily run software labs and without the need to spec, order, rack, stack, cable, image and deploy hardware, nested hypervisor labs are a useful addition. If you run into issues with a nested lab, give up or try to fix it on your own support. See
+Nested ESXi hypervisor lab on VMware workstation or on VMware ESXi are popular and community-driven. If you want to go for more hypervisor software learning, for headless functions, for easily run software labs and without the need to spec, order, rack, stack, cable, image and deploy hardware, nested hypervisor labs are a useful addition. If you run into issues with a nested lab, give up or try to fix it on your own support. See
   - https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization
   - https://kb.vmware.com/s/article/2009916
 
