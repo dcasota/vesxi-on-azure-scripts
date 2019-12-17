@@ -41,9 +41,8 @@ The script does:
  3. create virtual network and security group
  4. create two nics, one with a public IP address
  5. create the vm with Photon OS as os disk an a data disk processed with cloud-init custom data from ```prepare-disk.sh```
- 6. configure settings for nested virtualization
- 7. convert the disks created to managed disks, detach and re-attach the bootable ESXi data disk as os disk
-
+ 6. convert the disks created to managed disks, detach and re-attach the bootable ESXi data disk as os disk
+Afterwards the VM is started.
 
 
 NOT FINISHED! WORK IN PROGRESS!
