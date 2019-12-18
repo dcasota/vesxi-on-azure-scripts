@@ -23,7 +23,9 @@ VMware ESXi usually is delivered as an ISO file. An Azure VM cannot attach an IS
   6. mount and copy ESXi content to the data disk
   7. enable serial console redirection
   
-  ```prepare-disk.sh``` does step 2-7 for you. ```create-AzVM-vESXi_usingPhotonOS.ps1``` provides a solution for the first step.
+```create-AzVM-vESXi_usingPhotonOS.ps1``` provides a solution for the step 1.
+```prepare-disk.sh``` does step 2-7 for you. You have to configure manually the location of the ESXI ISO to be downloaded and the device name of the data disk attached. See the comments in the script.
+
  
  # ```create-AzVM-vESXi_usingPhotonOS.ps1```
 This script creates a VMware Photon OS VM of Azure size DS3v2. DS3v2 offers accelerated networking and premium disk support.
@@ -31,7 +33,7 @@ This script creates a VMware Photon OS VM of Azure size DS3v2. DS3v2 offers acce
 Photon OS is a tiny IoT cloud os and used as some sort of helper os to create and boot ESXi.
 The VMware Linux-distro is delivered in Azure .vhd disk format. The disk format .vhd has many limitations however, actually (December 2019), it's still the only Azure supported interoperability disk format. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/generation-2#features-and-capabilities. Keep that in mind when running some tests.
 
-Packages like mfat, syslinux, lspci or powershell makes it more comfortable to prepare an ESXi VM setup on Azure using VMware Photon OS.
+Packages like mfat, syslinux, lspci or powershell make it more comfortable to prepare an ESXi VM setup on Azure using VMware Photon OS.
 
 The script does:
  1. create a resource group and storage container
