@@ -15,6 +15,8 @@
 
 cd /root
 
+ISOFILENAME="ESXi-6.5.0-20191203001-standard-customized.iso"
+
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
 
@@ -26,10 +28,12 @@ tdnf install -y tar wget curl sed syslinux
 # Option #1: ESXi Customizer
 # tdnf install -y powershell
 # pwsh -c "install-module VMware.PowerCLI -force"
-# wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
-# .\ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
+# TODO VMware.Imagebuilder compatibility
 # TODO download and inject Mellanox offline bundle
-# .\ESXi-Customizer-PS-v2.6.0.ps1 -izip ./ESXi-6.5.0-20191203001-standard.zip -v65 -pkgDir ./driver-offline-bundle
+# wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
+# mkdir ./driver-offline-bundle
+# ./ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
+# ./ESXi-Customizer-PS-v2.6.0.ps1 -izip ./ESXi-6.5.0-20191203001-standard.zip -v65 -pkgDir ./driver-offline-bundle
 # tdnf remove -y powershell
 
 # Option #2: Download from Vendor URL
@@ -37,8 +41,7 @@ tdnf install -y tar wget curl sed syslinux
 # curl -O -J -L https://dl.dell.com/FOLDER05925371M/1/$ISOFILENAME
 
 # Option #3: Download from a Google Drive Download Link
-ISOFILENAME="ESXi-6.5.0-20191203001-standard-customized.iso"
-GOOGLEDRIVEFILEID="1wRj3kdFvKG_2n_YiDkShVn9-_JeJxPWb"
+GOOGLEDRIVEFILEID="1iIJHD-vy79rHoYfnSl196BMqXgzKqO0h"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -46,11 +49,18 @@ wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download
 # disk partitioning
 #------------------
 # delete partitions
-# export DEVICE2="/dev/sdc2"
-# export DEVICE3="/dev/sdc3"
-# umount $DEVICE1
-# umount $DEVICE2
-# umount $DEVICE3
+export DEVICE2=${DEVICE}2
+export DEVICE3=${DEVICE}3
+
+if grep $DEVICE3 /etc/mtab > /dev/null 2>&1; then
+    umount $DEVICE3
+fi
+if grep $DEVICE2 /etc/mtab > /dev/null 2>&1; then
+    umount $DEVICE2
+fi
+if grep $DEVICE1 /etc/mtab > /dev/null 2>&1; then
+    umount $DEVICE1
+fi
 # Press [d] to delete existing partitions. d 1 d 2 d
 echo -e "d\n1\nd\n2\nd\nw" | fdisk $DEVICE
 # create partition

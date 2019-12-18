@@ -173,7 +173,7 @@ if (([string]::IsNullOrEmpty($nsg)))
 }
 
 # Create a nic with a public IP address
-# This IP address is created as AcceleratedNetworking. Hence, the underlying NIC is presented to the VM.
+# This IP address is created as AcceleratedNetworking. Hence, the underlying NIC will become presentable to the VM created.
 $nic1=get-AzNetworkInterface -Name $NICName1 -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
 if (([string]::IsNullOrEmpty($nic1)))
 {
@@ -184,7 +184,7 @@ if (([string]::IsNullOrEmpty($nic1)))
 }
 
 # Create a second nic
-# This IP address is created as AcceleratedNetworking. Hence, the underlying NIC is presented to the VM.
+# This IP address is created as AcceleratedNetworking. Hence, the underlying NIC will become presentable to the VM created.
 $nic2=get-AzNetworkInterface -Name $NICName2 -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
 if (([string]::IsNullOrEmpty($nic2)))
 {
@@ -212,7 +212,6 @@ try {
 	--computer-name $computerName `
 	--nics $NICName1 $NicName2 `
 	--custom-data $Bashfilename `
-	--secrets "$vm_secrets" `
 	--generate-ssh-keys `
 	--boot-diagnostics-storage "https://${StorageAccountName}.blob.core.windows.net"
 } catch {}
@@ -224,16 +223,16 @@ if (-not ([string]::IsNullOrEmpty($VM)))
 {
 
 	# wait for custom data to be processed
-	$Timeout = 600
+	$Timeout = 1800
 	$i = 0
 	for ($i=0;$i -lt $Timeout; $i++) {
 		$percentComplete = ($i / $Timeout) * 100
 		Write-Progress -Activity 'Provisioning' -Status "Provisioning in progress ..." -PercentComplete $percentComplete
 		$VM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName -ErrorAction SilentlyContinue
-		if ($VM.ProvisioningState -eq 'Succeeded') {break}
+		if ($VM.OSProfile.LinuxConfiguration.ProvisionVMAgent -eq $true) {break}
 		sleep 1
 	}
-	if ($VM.ProvisioningState -eq 'Succeeded')
+	if ($VM.OSProfile.LinuxConfiguration.ProvisionVMAgent -eq $true)
 	{
 		# shutdown VM and deallocate it for the conversion to managed disks
 		Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
