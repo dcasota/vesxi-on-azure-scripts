@@ -12,6 +12,10 @@
 #    - attached disk /dev/sdc
 #    - Download URL for ESXi
 #
+# Known issues:
+# - partitioning fails with 'resource busy'.
+#   workaround: stop and restart the VM
+#
 
 cd /root
 
