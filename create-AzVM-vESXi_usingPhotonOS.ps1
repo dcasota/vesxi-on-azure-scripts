@@ -18,8 +18,16 @@
 # An Azure offering must support:
 # - Accelerated Networking. Without acceleratednetworking, network adapters are not presented to the ESXi VM.
 # - Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it.
-
-
+#
+# Known issues:
+# - start of ESXi VM fails (no boot medium found)
+#   workaround: re-attach the Photon OS disk as os disk and the data disk. Delete partitions on the data disk (/dev/sdc), reapply prepare-disk.sh, and rerun disk swap.
+# - ESXi starts with 'no network adapters'
+#   The Ethernet controller driver for 'Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]' does not work.
+#   See https://kb.vmware.com/s/article/60421?lang=en_US
+#   workaround: none
+#               For ESXi 6.5 injecting driver MLNX-NATIVE-ESX-ConnectX-3_3.16.11.10-10EM-650.0.0.4598673-offline_bundle-12539849 didn't work yet.
+#
 
 function create-AzVM-vESXi_usingPhotonOS{
    [cmdletbinding()]
