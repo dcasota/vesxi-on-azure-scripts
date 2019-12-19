@@ -14,7 +14,7 @@ If you want to go for more hypervisor software learning, and without the need to
 Keep in mind the operational economy for realworld physical hardware. It doesn't end with nested hypervisors. If you run into issues with a nested lab, give up or try to fix it on your own support. Running an ESXi VM on top of Azure pursues the following goals:
 - learn in pairs. As example, if you know how to create from an ISO an .vhd data disk, try to find similarities to previous achievements of making a bootable usb medium. 
 - pay more attention to interoperability and capabilities history. Disk formats like .vhd or .vhdx (conectix/Microsoft), .vmdk or .ova (VMware) or .vdi (Oracle) offer vendor specific benefits. There is no common cloud interchange disk format, but it became possible easily to export a disk as different formats.
-- code Azure and VMware functions step by step. Be pragmatic with GUI interactions.
+- code Azure and VMware functions step by step. Be pragmatic with findings from user interface interactions or results.
 - document the findings
 
 # ```prepare-disk.sh```
