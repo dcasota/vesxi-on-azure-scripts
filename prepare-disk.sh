@@ -41,7 +41,7 @@ tdnf install -y tar wget curl sed syslinux
 # curl -O -J -L https://dl.dell.com/FOLDER05925371M/1/$ISOFILENAME
 
 # Option #3: Download from a Google Drive Download Link
-GOOGLEDRIVEFILEID="1iIJHD-vy79rHoYfnSl196BMqXgzKqO0h"
+GOOGLEDRIVEFILEID="1Ob4IU5zolgl8e-6i2v3m2in6O55TA0Sa"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
