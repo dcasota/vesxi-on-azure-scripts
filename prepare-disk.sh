@@ -19,40 +19,21 @@
 
 cd /root
 
-ISOFILENAME="ESXi-6.5.0-20191203001-standard-customized.iso"
+# configure sshd
+systemctl stop sshd
+sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
+sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
 
-export DEVICE="/dev/sdc"
-export DEVICE1="/dev/sdc1"
-
-
-tdnf install -y tar wget curl sed syslinux
-
-# download VMware ESXi installable
-#---------------------------------
-# Option #1: ESXi Customizer
-# tdnf install -y powershell
-# pwsh -c "install-module VMware.PowerCLI -force"
-# TODO VMware.Imagebuilder compatibility
-# TODO download and inject Mellanox offline bundle
-# wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
-# mkdir ./driver-offline-bundle
-# ./ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
-# ./ESXi-Customizer-PS-v2.6.0.ps1 -izip ./ESXi-6.5.0-20191203001-standard.zip -v65 -pkgDir ./driver-offline-bundle
-# tdnf remove -y powershell
-
-# Option #2: Download from Vendor URL
-# ISOFILENAME="VMware-VMvisor-Installer-6.5.0.update03-14320405.x86_64-DellEMC_Customized-A03.iso"
-# curl -O -J -L https://dl.dell.com/FOLDER05925371M/1/$ISOFILENAME
-
-# Option #3: Download from a Google Drive Download Link
-GOOGLEDRIVEFILEID="1y6fZEikfQbAtwAPrly9JVrcXm5JW8s3I"
-GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
-wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
+systemctl enable sshd
+systemctl restart sshd
 
 
 # disk partitioning
 #------------------
-# delete partitions
+# delete partitions on data disk.
+# On Azure the data disk resources might be presented as busy. A reboot is necessary to delete partitions successfully.
+export DEVICE="/dev/sdc"
+export DEVICE1="/dev/sdc1"
 export DEVICE2=${DEVICE}2
 export DEVICE3=${DEVICE}3
 
@@ -67,6 +48,45 @@ if grep $DEVICE1 /etc/mtab > /dev/null 2>&1; then
 fi
 # Press [d] to delete existing partitions. d 1 d 2 d
 echo -e "d\n1\nd\n2\nd\nw" | fdisk $DEVICE
+
+BASHFILE="/root/configure-bootdisk.sh"
+# create bash file to be processed after a reboot 
+cat > $BASHFILE <<'EOF'
+#!/bin/sh
+cd /root
+
+ISOFILENAME="ESXi-6.5.0-20191203001-standard-customized.iso"
+
+export DEVICE="/dev/sdc"
+export DEVICE1="/dev/sdc1"
+
+
+tdnf install -y tar wget curl sed syslinux
+
+# download VMware ESXi installable
+#---------------------------------
+# Option #1: ESXi Customizer (UNFINISHED!)
+# tdnf install -y powershell
+# pwsh -c "install-module VMware.PowerCLI -force"
+# TODO VMware.Imagebuilder compatibility
+# TODO download and inject Mellanox offline bundle
+# wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
+# mkdir ./driver-offline-bundle
+# ./ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
+# ./ESXi-Customizer-PS-v2.6.0.ps1 -izip ./ESXi-6.5.0-20191203001-standard.zip -v65 -pkgDir ./driver-offline-bundle
+# tdnf remove -y powershell
+
+# Option #2: Download from Vendor URL
+# curl -O -J -L https://vmware.lenovo.com/content/custom_iso/6.5/6.5u3/$ISOFILENAME
+
+# Option #3: Download from a Google Drive Download Link
+GOOGLEDRIVEFILEID="1y6fZEikfQbAtwAPrly9JVrcXm5JW8s3I"
+GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
+
+
+# disk partitioning
+#------------------
 # create partition
 # Press [o] to create a new empty DOS partition table.
 # Press [n], [p] and press Enter 3 times to accept the default settings. This step creates a primary partition for you.
@@ -131,13 +151,13 @@ umount $ESXICD
 rm -r $ESXICD
 rm ./$ISOFILENAME
 
-# Enable serial console redirection
-#----------------------------------
+# Enable serial console redirection and add virtualization extension compatibility setting
+#-----------------------------------------------------------------------------------------
 #  copy these two files as they are necessary for boot.cfg
 cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
 cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
-# On Azure install ESXi via serial port.
-# See installing ESXi over serial console http://www.vmwareadmins.com/installing-esxi-serial-console-headless-video-card/ and
+# On Azure install ESXi via serial port, see weblinks about installing ESXi over serial console
+# http://www.vmwareadmins.com/installing-esxi-serial-console-headless-video-card/ and
 # https://pcengines.ch/ESXi_6.5.0_installation.txt and
 # https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.esxi.install.doc/GUID-B67A3552-CECA-4BF7-9487-4F36507CD99E.html
 # Add line "serial 0 115200" after "DEFAULT menu.c32" in syslinux.cfg
@@ -147,11 +167,43 @@ sed 's/DEFAULT menu.c32/&\nserial 0 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUN
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 # replace line "APPEND -c boot.cfg" with "APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1" in syslinux.cfg
 sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
-# replace line "kernelopt=cdromBoot runweasel" with "kernelopt=runweasel text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none cdromBoot" in boot.cfg
+# replace line "kernelopt=cdromBoot runweasel" with "kernelopt=runweasel iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none cdromBoot" in boot.cfg
+# virtualization extension compatibility setting to install ESXi on more Azure VM offerings successfully:
+# 'com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none' see weblinks above about installing ESXi over serial console
+# iovDisableIR=TRUE disables interrupt remapping as PCI devices may stop responding when using interrupt remapping. See https://kb.vmware.com/s/article/1030265
+# ignoreHeadless=TRUE is for passing correctly the network adapter in a nested virtualization environment.
+# See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
+# noIOMMU see https://communities.vmware.com/thread/515358
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
-sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none cdromBoot/' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none cdromBoot/' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 #cleanup
 cd /root
 umount $VHDMOUNT
 rm -r $VHDMOUNT
+#power down
+systemctl stop configurebootdisk.service
+systemctl disable configurebootdisk.service
+# power down VM
+shutdown --poweroff now
+EOF
 
+chmod a+x $BASHFILE
+# schedule $BASHFILE to automatically run once after a reboot
+# See https://vmware.github.io/photon/assets/files/html/3.0/photon_admin/creating-a-startup-service.html
+cat << EOF1 >> /lib/systemd/system/configurebootdisk.service
+[Unit]
+Description=Configure datadisk as ESXi bootdisk
+After=waagent.service
+Wants=waagent.service
+
+[Service]
+ExecStart=$BASHFILE
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target
+EOF1
+cd /lib/systemd/system/multi-user.target.wants/
+ln -s ../configurebootdisk.service configurebootdisk.service
+
+reboot --reboot --force
