@@ -51,6 +51,8 @@ The script does:
  7. Wait for powerstate deallocated. Convert the disks created to managed disks.
     Detach and re-attach the bootable ESXi data disk as os disk. Afterwards, boot the ESXi VM.
 
+
+
 # ```prepare-disk.sh```
 The bash script configures an attached data disk as ESXi bootable medium.
 It must run on VMware Photon OS. You have to enter your location of the ESXi ISO medium. See comments inside the script.
