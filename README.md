@@ -23,7 +23,8 @@ This study work running an ESXi VM on top of Azure pursues the following goals:
 - pay more attention to interoperability and capabilities history. As example, disk formats like .vhd or .vhdx (conectix/Microsoft), .vmdk or .ova (VMware) or .vdi (Oracle) offer vendor specific benefits. There is no common cloud interchange disk format, but it became easier to export a disk as different formats.
 - code Microsoft Azure VM and VMware ESXi setup or kickstart scripts step by step. Be pragmatic with findings from user interface interactions or results.
 - document the findings. The mission of this cross-type-1-hypervisor nested lab is getting a horizon view of both worlds.
- 
+  
+   
  # ```create-AzVM-vESXi_usingPhotonOS.ps1```
 The script creates a VMware ESXi VM on Microsoft Azure. The hardware used is a Standard_DS3_v2 offering.
 An ESXi VM offering on Azure must support:
@@ -51,8 +52,8 @@ The script does:
  7. Wait for powerstate deallocated. Convert the disks created to managed disks.
     Detach and re-attach the bootable ESXi data disk as os disk. Afterwards, boot the ESXi VM.
 
-
-
+ 
+ 
 # ```prepare-disk.sh```
 The bash script configures an attached data disk as ESXi bootable medium.
 It must run on VMware Photon OS. You have to enter your location of the ESXi ISO medium. See comments inside the script.
