@@ -14,23 +14,23 @@ If you want to go for more hypervisor software learning, and without the need to
   - https://kb.vmware.com/s/article/2009916
   - https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization
   
-So why are people running their stuff in a nested virtualization lab? Automation&Integration engineers often uses nested hypervisor labs to test their kickstart/setup/configuration scripts without the need of tests always allocating own realworld physical hardware. That said, keep in mind the operational economy radius of realworld physical hardware. It doesn't end with nested hypervisors.
+So why are people running their stuff in a nested virtualization lab? Automation&Integration engineers often uses nested hypervisor labs to test their kickstart/setup/configuration scripts without the need of tests always allocating own realworld physical hardware. That said, keep in mind the operational economy radius of realworld physical hardware. It doesn't end with nested hypervisors. There is degraded value of running compute resources in a nested virtualization environment only.
 
-Some nested hypervisor configurations are technically possible. Realworld physical hardware is a key point in a 'type-1 hypervisor running in a VM on top of a type-1 hypervisor' scenario. If you run into issues with a nested lab, give up or try to fix it on your own support.
+Realworld physical hardware is a key point in a 'type-1 hypervisor running in a VM on top of a type-1 hypervisor' scenario. Some nested hypervisor configurations are technically possible. If you run into issues with a nested lab, give up or try to fix it on your own support if you still focus on hypervisor software learning. 
 
 This study work running an ESXi VM on top of Azure pursues the following goals:
-- learn back-to-the-basics in pairs. As example, if you know how to create from an ISO a .vhd data disk, try to find similarities to previous achievements of making a bootable usb medium. 
+- learn back-to-the-basics in pairs. As example, if you newly learned how to create from an ISO a .vhd data disk, try to find similarities to previous achievements of making a bootable usb medium. 
 - pay more attention to interoperability and capabilities history. As example, disk formats like .vhd or .vhdx (conectix/Microsoft), .vmdk or .ova (VMware) or .vdi (Oracle) offer vendor specific benefits. There is no common cloud interchange disk format, but it became easier to export a disk as different formats.
 - code Microsoft Azure VM and VMware ESXi setup or kickstart scripts step by step. Be pragmatic with findings from user interface interactions or results.
-- document the findings. The mission is getting a better understand of both worlds.
+- document the findings. The mission of this cross-type-1-hypervisor nested lab is getting a horizon view of both worlds.
  
  # ```create-AzVM-vESXi_usingPhotonOS.ps1```
-This script creates a VMware ESXi VM on Microsoft Azure. The hardware used is a Standard_DS3_v2 offering.
-The ESXi VM offering on Azure must support:
+The script creates a VMware ESXi VM on Microsoft Azure. The hardware used is a Standard_DS3_v2 offering.
+An ESXi VM offering on Azure must support:
 - Accelerated Networking. Without acceleratednetworking, network adapters are not presented to the ESXi VM.
-- Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it.
+- Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it in a VM.
 
-VMware ESXi usually is delivered as an ISO file. An Azure VM cannot attach an ISO like in VMware vSphere. In my studies so far the simplest solution make run ESXi is creating the VM with temporary installed VMware Photon OS. An attached data disk is used for the installation bits of ESXi. Then, the disks are switched and ESXi boots from the prepared data disk. During ESXi setup, you can select the second disk as installation disk, and detach it after ESXi setup.
+VMware ESXi usually is delivered as an ISO file. An Azure VM cannot attach an ISO like VMware vSphere. In my studies so far the simplest solution make run ESXi is creating the VM with temporary installed VMware Photon OS. An attached data disk is used for the installation bits of ESXi. Then, the disks are switched and ESXi boots from the prepared data disk. During ESXi setup, you can select the second disk as installation disk, and detach the .vhdified ISO after ESXi setup.
 
 VMware Photon OS is a tiny IoT cloud os. See https://vmware.github.io/photon/.
 The VMware Linux-distro is delivered in several disk formats. The script uses the Azure .vhd. It is important to know that actually (December 2019), .vhd is still the only Azure supported interoperability disk format. See .vhd limitations https://docs.microsoft.com/en-us/azure/virtual-machines/windows/generation-2#features-and-capabilities. Keep that in mind when running some tests.
