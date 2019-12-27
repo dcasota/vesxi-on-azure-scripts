@@ -6,16 +6,23 @@ This lab project contains scripts for provisioning VMware ESXi as Microsoft Azur
   - create-AzVM-vESXi_usingPhotonOS.ps1
   - prepare-disk.sh  
   
-VMware ESXi, the cloud provider and onpremise datacenter type-1 hypervisor for many guest OS has been established for more than fifteen years. Reliability, scalability, performance for compute resources is a main topic on Microsoft Azure and its Hyper-V type-1 hypervisor, too.
-If you want to go for more hypervisor software learning, and without the need to spec, order, rack, stack, cable, image and deploy hardware, nested hypervisor labs could be a useful addition. Some nested hypervisor configurations are technically possible. Automation&Integration engineers often uses nested hypervisor labs to test their kickstart/setup/configuration scripts without the need of tests always with allocating realworld physical hardware. Realworld physical hardware is a key point as a 'type-1 hypervisor running in a VM on top of a type-1 hypervisor' scenario is not officially supported. See
-  - https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization
-  - https://kb.vmware.com/s/article/2009916
+VMware ESXi, the cloud provider and onpremise datacenter type-1 hypervisor for many guest OS has been established for more than fifteen years.
 
-Keep in mind the operational economy for realworld physical hardware. It doesn't end with nested hypervisors. If you run into issues with a nested lab, give up or try to fix it on your own support. Running an ESXi VM on top of Azure pursues the following goals:
-- learn in pairs. As example, if you know how to create from an ISO an .vhd data disk, try to find similarities to previous achievements of making a bootable usb medium. 
-- pay more attention to interoperability and capabilities history. Disk formats like .vhd or .vhdx (conectix/Microsoft), .vmdk or .ova (VMware) or .vdi (Oracle) offer vendor specific benefits. There is no common cloud interchange disk format, but it became possible easily to export a disk as different formats.
-- code Azure and VMware functions step by step. Be pragmatic with findings from user interface interactions or results.
-- document the findings
+Reliability, scalability, performance for compute resources is a main topic on Microsoft Azure and its Hyper-V type-1 hypervisor, too.
+
+If you want to go for more hypervisor software learning, and without the need to spec, order, rack, stack, cable, image and deploy hardware, nested hypervisor labs could be a useful addition, but, not officially supported. See
+  - https://kb.vmware.com/s/article/2009916
+  - https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization
+  
+So why are people running their stuff in a nested virtualization lab? Automation&Integration engineers often uses nested hypervisor labs to test their kickstart/setup/configuration scripts without the need of tests always allocating own realworld physical hardware. That said, keep in mind the operational economy radius of realworld physical hardware. It doesn't end with nested hypervisors.
+
+Some nested hypervisor configurations are technically possible. Realworld physical hardware is a key point in a 'type-1 hypervisor running in a VM on top of a type-1 hypervisor' scenario. If you run into issues with a nested lab, give up or try to fix it on your own support.
+
+This study work running an ESXi VM on top of Azure pursues the following goals:
+- learn back-to-the-basics in pairs. As example, if you know how to create from an ISO a .vhd data disk, try to find similarities to previous achievements of making a bootable usb medium. 
+- pay more attention to interoperability and capabilities history. As example, disk formats like .vhd or .vhdx (conectix/Microsoft), .vmdk or .ova (VMware) or .vdi (Oracle) offer vendor specific benefits. There is no common cloud interchange disk format, but it became easier to export a disk as different formats.
+- code Microsoft Azure VM and VMware ESXi setup or kickstart scripts step by step. Be pragmatic with findings from user interface interactions or results.
+- document the findings. The mission is getting a better understand of both worlds.
  
  # ```create-AzVM-vESXi_usingPhotonOS.ps1```
 This script creates a VMware ESXi VM on Microsoft Azure. The hardware used is a Standard_DS3_v2 offering.
