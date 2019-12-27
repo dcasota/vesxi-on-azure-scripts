@@ -298,26 +298,18 @@ set-location -path $locationstack
 
 # Step #7: convert the disks created to managed disks, detach and re-attach the bootable ESXi data disk as os disk. Afterwards the VM is started.
 # -----------------------------------------------------------------------------------------------------------------------------------------------
-$VM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName -ErrorAction SilentlyContinue
-if (-not ([string]::IsNullOrEmpty($VM)))
-{
 
-	# The VM is configured through custom-data to automatically power down. Wait for powerstate stopped.
-	$Timeout = 1800
-	$i = 0
-	for ($i=0;$i -lt $Timeout; $i++) {
-		$percentComplete = ($i / $Timeout) * 100
-		Write-Progress -Activity 'Provisioning' -Status "Provisioning in progress ..." -PercentComplete $percentComplete
-        $VM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName -status -ErrorAction SilentlyContinue
-        if (-not ([string]::IsNullOrEmpty($VM)))
-        {
-		    if ((($VM).Statuses[1].Code) -ceq "PowerState/stopped") { break }
-        }
-		sleep 1
-	}
 
-	if ((($VM).Statuses[1].Code) -ceq "PowerState/stopped")
-	{
+# The VM is configured through custom-data to automatically power down. Wait for powerstate stopped.
+$Timeout = 1800
+$i = 0
+for ($i=0;$i -lt $Timeout; $i++) {
+    $percentComplete = ($i / $Timeout) * 100
+    Write-Progress -Activity 'Provisioning' -Status "Provisioning in progress ..." -PercentComplete $percentComplete
+    $objVM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $vmName -status -ErrorAction SilentlyContinue
+    if (-not ([string]::IsNullOrEmpty($objVM)))
+    {
+        if (((($objVM).Statuses[1]).Code) -ceq "PowerState/stopped") { 
 		# shutdown VM and deallocate it for the conversion to managed disks
 		Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
 
@@ -340,8 +332,11 @@ if (-not ([string]::IsNullOrEmpty($VM)))
 		Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
 
 		Start-AzVM -ResourceGroupName $resourceGroupName -Name $vmName
-	}
+        }
+    }
+    sleep 1
 }
+
 }
 
 create-AzVM-vESXi_usingPhotonOS
