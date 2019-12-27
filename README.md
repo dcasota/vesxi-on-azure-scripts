@@ -56,22 +56,32 @@ The bash script configures an attached data disk as ESXi bootable medium.
 It must run on VMware Photon OS. You have to enter your location of the ESXi ISO medium. See comments inside the script.
 
   1. Configure sshd. Use the LocalAdminUser credentials specified in ```create-AzVM-vESXi_usingPhotonOS.ps1``` for ssh login.
+
   2. delete partitions on data disk. Only the data disk .vhd header is needed for creating a bootable disk.
+
   3. dynamically create a bash file to be scheduled once as configurebootdisk.service after a reboot
+
   4. reboot, afterwards start the configurebootdisk.service created
+
      4.1. download an ESXi ISO. Specify the variable ISOFILENAME.
           The options tested are download from a vendor URL or download from a Google drive download link.
           In case of using a vendor URL, uncomment the line
           ```curl -O -J -L https://vmware.lenovo.com/content/custom_iso/6.5/6.5u3/$ISOFILENAME``` and modify it.
           In case of using a Google drive download link, uncomment the line ```GOOGLEDRIVEFILEID="1y6fZEikfQbAtwAPrly9JVrcXm5JW8s3I"```
           and insert your file id.
+
      4.2. partition the attached data disk
+
      4.3. format the data disk as FAT32. Hence, some packages and mtools-4.0.23.tar.gz used are installed temporarily.
-     4.4. install Syslinux bootlader 3.86 for ESXi on the data disk. syslinux-3.86.tar.xz is installed temporarily. 
+
+     4.4. install Syslinux bootlader 3.86 for ESXi on the data disk. syslinux-3.86.tar.xz is installed temporarily.
+ 
      4.5. mount and copy ESXi content to the data disk
+
      4.6. enable serial console redirection and add virtualization extension compatibility setting
           This is an important step to make run serial console for the setup phase of ESXi VM on Azure, as well as
           providing the compatibility setting iovDisableIR=TRUE, ignoreHeadless=TRUE and noIOMMU to be passed for grub.
+
      4.7. power down VM
   
 UNFINISHED! WORK IN PROGRESS!
