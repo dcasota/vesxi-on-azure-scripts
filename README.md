@@ -53,11 +53,12 @@ The bash script configures an attached data disk as ESXi bootable medium. It mus
 
   1. Configure sshd. Use the LocalAdminUser credentials specified in ```create-AzVM-vESXi_usingPhotonOS.ps1``` for ssh login.
 
-  2. delete partitions on data disk. Only the data disk .vhd header is needed for creating a bootable disk.
+  2. delete partitions on the page blob data disk.
+     Comment: only the data disk .vhd (conectix) header is needed for creating a bootable disk.
 
   3. dynamically create a bash file to be scheduled once as configurebootdisk.service after a reboot
 
-  4. reboot, afterwards start the configurebootdisk.service created
+  4. reboot, afterwards start the configurebootdisk.service created:
 
      4.1. download an ESXi ISO. Specify the variable ISOFILENAME.
           The options tested are download from a vendor URL or download from a Google drive download link.
