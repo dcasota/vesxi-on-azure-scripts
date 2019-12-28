@@ -18,7 +18,8 @@
 
 cd /root
 
-# configure sshd
+# Step #1: configure sshd
+# -----------------------
 systemctl stop sshd
 sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
@@ -27,9 +28,8 @@ systemctl enable sshd
 systemctl restart sshd
 
 
-# disk partitioning
-#------------------
-# delete partitions on data disk.
+# Step #2: delete partitions on the page blob data disk
+# -----------------------------------------------------
 # On Azure the data disk resources might be presented as busy. A reboot is necessary to delete partitions successfully.
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
@@ -48,6 +48,8 @@ fi
 # Press [d] to delete existing partitions. d 1 d 2 d
 echo -e "d\n1\nd\n2\nd\nw" | fdisk $DEVICE
 
+# Step #3: dynamically create a bash file to be scheduled once as configurebootdisk.service after a reboot
+# --------------------------------------------------------------------------------------------------------
 BASHFILE="/root/configure-bootdisk.sh"
 # create bash file to be processed after a reboot 
 cat > $BASHFILE <<'EOF'
@@ -62,8 +64,8 @@ export DEVICE1="/dev/sdc1"
 
 tdnf install -y tar wget curl sed syslinux
 
-# download VMware ESXi installable
-#---------------------------------
+# Step #4.1: download an ESXi ISO
+# -------------------------------
 # Option #1: ESXi Customizer (UNFINISHED!)
 # tdnf install -y powershell
 # pwsh -c "install-module VMware.PowerCLI -force"
@@ -86,8 +88,8 @@ GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
 
-# disk partitioning
-#------------------
+# Step #4.2: partition the data disk attached
+# -------------------------------------------
 # Press [d] to delete any existing primary partition.
 echo -e "d\nw" | fdisk $DEVICE
 # create partition
@@ -102,8 +104,8 @@ echo -e "o\nn\np\n1\n\n\nw" | fdisk $DEVICE
 echo -e "t\nc\nc\na\nw" | fdisk $DEVICE
 
 
-# format partition as FAT32
-#--------------------------
+# Step #4.3: format the data disk partition as FAT32
+# --------------------------------------------------
 cd /root
 # First configure packages to make run Msdos tools for Linux
 tdnf install -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
@@ -121,8 +123,8 @@ rm -r ./mtools-4.0.23
 rm ./mtools-4.0.23.tar.gz
 
 
-# install bootloader
-#-------------------
+# Step #4.4: install syslinux bootloader
+# --------------------------------------
 # ESXi uses Syslinux 3.86. See https://pubs.vmware.com/vsphere-50/index.jsp?topic=%2Fcom.vmware.vsphere.upgrade.doc_50%2FGUID-33C3E7D5-20D0-4F84-B2E3-5CD33D32EAA8.html
 cd /root
 curl -O -J -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/3.xx/syslinux-3.86.tar.xz
@@ -137,8 +139,9 @@ rm -r ./syslinux-3.86
 rm syslinux-3.86.tar.xz
 tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 
-# Mount and copy content to disk
-#-------------------------------
+
+# Step #4.5: mount and copy ESXi content to the data disk
+# -------------------------------------------------------
 cd /root
 VHDMOUNT=/vhdmount
 mkdir $VHDMOUNT
@@ -154,8 +157,8 @@ umount $ESXICD
 rm -r $ESXICD
 rm ./$ISOFILENAME
 
-# Enable serial console redirection and add virtualization extension compatibility setting
-#-----------------------------------------------------------------------------------------
+# Step #4.6: Enable serial console redirection and add virtualization extension compatibility setting
+#----------------------------------------------------------------------------------------------------
 #  copy these two files as they are necessary for boot.cfg
 cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
 cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
@@ -185,12 +188,14 @@ cp $VHDMOUNT/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg
 cd /root
 umount $VHDMOUNT
 rm -r $VHDMOUNT
-# power down VM
+# Step #4.7: power down the VM
+#-----------------------------
 systemctl disable configurebootdisk.service
 rm /lib/systemd/system/multi-user.target.wants/configurebootdisk.service
 unlink /lib/systemd/system/configurebootdisk.service
 shutdown --poweroff now
 EOF
+
 
 chmod a+x $BASHFILE
 # schedule $BASHFILE to automatically run once after a reboot
@@ -211,4 +216,6 @@ EOF1
 cd /lib/systemd/system/multi-user.target.wants/
 ln -s ../configurebootdisk.service configurebootdisk.service
 
+# Step #4: reboot, afterwards start the configurebootdisk.service created (see Step 4.1)
+# --------------------------------------------------------------------------------------
 reboot --reboot --force
