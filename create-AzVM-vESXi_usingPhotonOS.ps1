@@ -126,7 +126,7 @@ function create-AzVM-vESXi_usingPhotonOS{
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$VMLocalAdminUser="adminuser", #all small letters
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$VMLocalAdminPassword = "Photonos123!" , #pwd must be 7-12 characters
+        [String]$VMLocalAdminPassword = "PhotonOS123!" , #pwd must be 7-12 characters
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$BashfileName="prepare-disk.sh"		
     )
@@ -298,43 +298,39 @@ set-location -path $locationstack
 
 # Step #7: convert the disks created to managed disks, detach and re-attach the bootable ESXi data disk as os disk. Afterwards the VM is started.
 # -----------------------------------------------------------------------------------------------------------------------------------------------
-
-
 # The VM is configured through custom-data to automatically power down. Wait for powerstate stopped.
 $Timeout = 1800
 $i = 0
 for ($i=0;$i -lt $Timeout; $i++) {
+	sleep 1
     $percentComplete = ($i / $Timeout) * 100
     Write-Progress -Activity 'Provisioning' -Status "Provisioning in progress ..." -PercentComplete $percentComplete
     $objVM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $vmName -status -ErrorAction SilentlyContinue
-    if (-not ([string]::IsNullOrEmpty($objVM)))
-    {
+    if (-not ([string]::IsNullOrEmpty($objVM))) {
         if (((($objVM).Statuses[1]).Code) -ceq "PowerState/stopped") { 
-		# shutdown VM and deallocate it for the conversion to managed disks
-		Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
+		    # shutdown VM and deallocate it for the conversion to managed disks
+		    Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
+		    # Convert to managed disks https://docs.microsoft.com/en-us/azure/virtual-machines/windows/convert-unmanaged-to-managed-disks
+		    ConvertTo-AzVMManagedDisk -ResourceGroupName $ResourceGroupName -VMName $vmName
+		    # Starts VM automatically
 
-		# Convert to managed disks https://docs.microsoft.com/en-us/azure/virtual-machines/windows/convert-unmanaged-to-managed-disks
-		ConvertTo-AzVMManagedDisk -ResourceGroupName $ResourceGroupName -VMName $vmName
-		# Starts VM automatically
+		    # Make sure the VM is stopped but not deallocated so you can detach/attach disk
+		    Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
+		    # Detach the prepared data disk
+		    $SourceDiskName=(Get-AzDisk -ResourceGroupName $resourceGroupName | Select Name).Name[1]
+		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
+		    $virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+		    Remove-AzVMDataDisk -VM $VirtualMachine -Name $SourceDiskName
+		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
+		    # Set the prepared data disk as os disk
+		    $virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmname
+		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
+		    Set-AzVMOSDisk -VM $virtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name
+		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
 
-		# Make sure the VM is stopped but not deallocated so you can detach/attach disk
-		Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
-		# Detach the prepared data disk
-		$SourceDiskName=(Get-AzDisk -ResourceGroupName $resourceGroupName | Select Name).Name[1]
-		$sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
-		$virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
-		Remove-AzVMDataDisk -VM $VirtualMachine -Name $SourceDiskName
-		Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
-		# Set the prepared data disk as os disk
-		$virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmname
-		$sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
-		Set-AzVMOSDisk -VM $virtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name
-		Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
-
-		Start-AzVM -ResourceGroupName $resourceGroupName -Name $vmName
+		    Start-AzVM -ResourceGroupName $resourceGroupName -Name $vmName
         }
     }
-    sleep 1
 }
 
 }

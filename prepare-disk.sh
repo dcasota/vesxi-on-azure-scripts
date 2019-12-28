@@ -10,11 +10,10 @@
 #    - VMware Photon OS 3.0
 #    - Run as root
 #    - attached disk /dev/sdc
-#    - Download URL for ESXi
+#    - network connectivity
+#    - specify vendor/google drive URL for ESXi ISO
 #
 # Known issues:
-# - partitioning fails with 'resource busy'.
-#   workaround: stop and restart the VM
 #
 
 cd /root
@@ -55,7 +54,7 @@ cat > $BASHFILE <<'EOF'
 #!/bin/sh
 cd /root
 
-ISOFILENAME="ESXi-6.7.0-20191204001-standard.iso"
+ISOFILENAME="ESXi-6.5.0-20191204001-standard-customized.iso"
 
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
@@ -70,6 +69,8 @@ tdnf install -y tar wget curl sed syslinux
 # pwsh -c "install-module VMware.PowerCLI -force"
 # TODO VMware.Imagebuilder compatibility
 # TODO download and inject Mellanox offline bundle
+# https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver
+# https://my.vmware.com/web/vmware/details?downloadGroup=DT-ESXI65-MELLANOX-NMLX4-EN-3161110&productId=614
 # wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
 # mkdir ./driver-offline-bundle
 # ./ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
@@ -77,16 +78,19 @@ tdnf install -y tar wget curl sed syslinux
 # tdnf remove -y powershell
 
 # Option #2: Download from Vendor URL
-# curl -O -J -L https://vmware.lenovo.com/content/custom_iso/6.5/6.5u3/$ISOFILENAME
+# VENDORURL=inserthere
+# curl -O -J -L $VENDORURL
 
 # Option #3: Download from a Google Drive Download Link
-GOOGLEDRIVEFILEID="1rUdAOocZYmanSPrv-GSc_5lrhbfNWG9w"
+GOOGLEDRIVEFILEID="1gtqqsv1156zf0kgUJxBL9jiJ1pz_NYhr"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
 
 # disk partitioning
 #------------------
+# Press [d] to delete any existing primary partition.
+echo -e "d\nw" | fdisk $DEVICE
 # create partition
 # Press [o] to create a new empty DOS partition table.
 # Press [n], [p] and press Enter 3 times to accept the default settings. This step creates a primary partition for you.
@@ -115,7 +119,7 @@ make install
 # cleanup
 cd /root
 rm -r ./mtools-4.0.23
-rm mtools-4.0.23.tar.gz
+rm ./mtools-4.0.23.tar.gz
 
 
 # install bootloader
@@ -181,6 +185,7 @@ cd /root
 umount $VHDMOUNT
 rm -r $VHDMOUNT
 # power down VM
+systemctl disable configurebootdisk.service
 shutdown --poweroff now
 EOF
 
