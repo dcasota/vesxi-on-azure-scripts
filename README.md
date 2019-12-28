@@ -61,10 +61,10 @@ The bash script configures an attached data disk as ESXi bootable medium. It mus
 
      4.1. download an ESXi ISO. Specify the variable ISOFILENAME.
           The options tested are download from a vendor URL or download from a Google drive download link.
-          In case of using a vendor URL, uncomment the line
-          ```curl -O -J -L https://vmware.lenovo.com/content/custom_iso/6.5/6.5u3/$ISOFILENAME``` and modify it.
-          In case of using a Google drive download link, uncomment the line ```GOOGLEDRIVEFILEID="1y6fZEikfQbAtwAPrly9JVrcXm5JW8s3I"```
-          and insert your file id.
+          In case of using a vendor URL, uncomment the lines
+          ```VENDORURL=...```, insert the VendorURL, and uncomment the next line ```curl -O -J -L $VENDORURL```.
+          In case of using a Google drive download link, uncomment the lines beginning with ```GOOGLEDRIVEFILEID=```,
+          insert your file id, and uncomment the lines beginning with ```GOOGLEDRIVEURL``` and ```wget --load-cookies```.
 
      4.2. partition the attached data disk
 
