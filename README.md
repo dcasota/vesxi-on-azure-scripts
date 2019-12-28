@@ -43,7 +43,7 @@ The script processes following steps:
  5. create two nics, one with a public IP address
  6. create the vm with Photon OS as os disk an a data disk processed with cloud-init custom data from ```$Bashfilename```
     See ```prepare-disk.sh``` for detailed information.
- 7. Wait for powerstate deallocated. Convert the disks created to managed disks.
+ 7. Wait for powerstate stopped. Convert the disks created to managed disks.
     Detach and re-attach the bootable ESXi data disk as os disk. Afterwards, boot the ESXi VM.
 
  The ESXi kickstart setup and the detach of the .vhdified ISO after ESXi setup, aren't automated yet.
