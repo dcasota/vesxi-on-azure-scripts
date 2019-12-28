@@ -186,6 +186,8 @@ umount $VHDMOUNT
 rm -r $VHDMOUNT
 # power down VM
 systemctl disable configurebootdisk.service
+rm /lib/systemd/system/multi-user.target.wants/configurebootdisk.service
+unlink /lib/systemd/system/configurebootdisk.service
 shutdown --poweroff now
 EOF
 
