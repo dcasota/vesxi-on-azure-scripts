@@ -25,22 +25,17 @@ This study work running an ESXi VM on top of Azure pursues the following goals:
    
     
  # ```create-AzVM-vESXi_usingPhotonOS.ps1```
-The script creates a VMware ESXi VM on Microsoft Azure. The hardware used is a Standard_DS3_v2 offering.
+The Azure powershell script creates a VMware ESXi VM on Microsoft Azure. The hardware used is a Standard_DS3_v2 offering.
 An ESXi VM offering on Azure must support:
 - Accelerated Networking. Without acceleratednetworking, network adapters are not presented to the ESXi VM.
 - Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it in a VM.
 
-VMware ESXi usually is delivered as an ISO file. An Azure VM cannot attach an ISO like VMware vSphere. In my studies so far the simplest solution make run ESXi is creating the VM with temporary installed VMware Photon OS. An attached data disk is used for the installation bits of ESXi. Then, the disks are switched and ESXi boots from the prepared data disk. During ESXi setup, you can select the second disk as installation disk, and detach the .vhdified ISO after ESXi setup.
-
-VMware Photon OS is a tiny IoT cloud os. See https://vmware.github.io/photon/.
+VMware Photon OS is installed first as some sort of helper-OS for the ESXi boot medium preparation. VMware Photon OS is a tiny IoT cloud os. See https://vmware.github.io/photon/.
 The VMware Linux-distro is delivered in several disk formats. The script uses the Azure .vhd. It is important to know that actually (December 2019), .vhd is still the only Azure supported interoperability disk format. See .vhd limitations https://docs.microsoft.com/en-us/azure/virtual-machines/windows/generation-2#features-and-capabilities. Keep that in mind when running some tests.
 
-From the Photon OS .vhd the Azure VM is created using it as osdisk as well as a data disk.
-is attached as Photon OS osdisk first, and during ESXias as some sort of helper os to create and boot ESXi. 
+VMware ESXi usually is delivered as an ISO file. An Azure VM cannot attach an ISO like VMware vSphere. In my studies so far the simplest solution make run ESXi is creating the VM with temporary installed VMware Photon OS. In short: from the VMware Photon OS .vhd, the Azure VM is created using it as osdisk as well as an attached data disk. The data disk is installed with the ISO bits of ESXi. Then, the disks are switched and ESXi boots from the prepared data disk. During ESXi setup, you select the second disk as installation disk, and detach the .vhdified ISO after ESXi setup.
 
-The disk format .vhd has many limitations however, 
-
-The script does:
+The script processes following steps:
  1. Check prerequisites and Azure login
  2. create a resource group and storage container
  3. upload the Photon OS .vhd as page blob
@@ -51,11 +46,10 @@ The script does:
  7. Wait for powerstate deallocated. Convert the disks created to managed disks.
     Detach and re-attach the bootable ESXi data disk as os disk. Afterwards, boot the ESXi VM.
 
- 
+ The ESXi kickstart setup and the detach of the .vhdified ISO after ESXi setup, aren't automated yet.
  
 # ```prepare-disk.sh```
-The bash script configures an attached data disk as ESXi bootable medium.
-It must run on VMware Photon OS. You have to enter your location of the ESXi ISO medium. See comments inside the script.
+The bash script configures an attached data disk as ESXi bootable medium. It must run on VMware Photon OS. And you have to enter your location of the ESXi ISO medium. See comments inside the script. The script processes following steps:
 
   1. Configure sshd. Use the LocalAdminUser credentials specified in ```create-AzVM-vESXi_usingPhotonOS.ps1``` for ssh login.
 
@@ -84,6 +78,6 @@ It must run on VMware Photon OS. You have to enter your location of the ESXi ISO
           This is an important step to make run serial console for the setup phase of ESXi VM on Azure, as well as
           providing the compatibility setting iovDisableIR=TRUE, ignoreHeadless=TRUE and noIOMMU to be passed for grub.
 
-     4.7. power down VM
+     4.7. power down the VM
   
 UNFINISHED! WORK IN PROGRESS!
