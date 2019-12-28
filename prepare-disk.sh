@@ -70,7 +70,6 @@ tdnf install -y tar wget curl sed syslinux
 # TODO VMware.Imagebuilder compatibility
 # TODO download and inject Mellanox offline bundle
 # https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver
-# https://my.vmware.com/web/vmware/details?downloadGroup=DT-ESXI65-MELLANOX-NMLX4-EN-3161110&productId=614
 # wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
 # mkdir ./driver-offline-bundle
 # ./ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
@@ -82,7 +81,7 @@ tdnf install -y tar wget curl sed syslinux
 # curl -O -J -L $VENDORURL
 
 # Option #3: Download from a Google Drive Download Link
-GOOGLEDRIVEFILEID="1gtqqsv1156zf0kgUJxBL9jiJ1pz_NYhr"
+GOOGLEDRIVEFILEID="1R1-MYANHo3FKxlKmx5JwzQJmCWDGNvan"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -180,6 +179,8 @@ sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2
 # noIOMMU see https://communities.vmware.com/thread/515358
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
 sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none cdromBoot/' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+# same setting for EFI
+cp $VHDMOUNT/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg
 #cleanup
 cd /root
 umount $VHDMOUNT

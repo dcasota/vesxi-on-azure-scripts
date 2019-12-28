@@ -20,7 +20,7 @@
 #
 # The script uses the Standard_DS3_v2 offering: 4vCPU,14GB RAM, Accelerating Networking: Yes, Premium disk support:Yes. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes-general
 #
-# Alternative VM sizes as per 27.12.2019 are:
+# Alternative VM sizes with accelerating networking as per 27.12.2019 are:
 # Standard_D3_v2, Standard_D12_v2, Standard_D3_v2_Promo, Standard_D12_v2_Promo, Standard_DS3_v2, Standard_DS12_v2, Standard_DS13-4_v2, Standard_DS14-4_v2, Standard_DS3_v2_Promo, Standard_DS12_v2_Promo, 
 # Standard_DS13-4_v2_Promo, Standard_DS14-4_v2_Promo, Standard_F4, Standard_F4s, Standard_D8_v3, Standard_D8s_v3, Standard_D32-8s_v3, Standard_E8_v3, Standard_E8s_v3, Standard_D3_v2_ABC, Standard_D12_v2_ABC, Standard_F4_ABC, Standard_F8s_v2, Standard_D4_v2, 
 # Standard_D13_v2, Standard_D4_v2_Promo, Standard_D13_v2_Promo, Standard_DS4_v2, Standard_DS13_v2, Standard_DS14-8_v2, Standard_DS4_v2_Promo, Standard_DS13_v2_Promo, Standard_DS14-8_v2_Promo, Standard_F8, Standard_F8s, Standard_M64-16ms, Standard_D16_v3, 
@@ -53,14 +53,32 @@
 # 
 #
 # Known issues:
-# - start of ESXi VM fails (no boot medium found)
-#   workaround: re-attach the Photon OS disk as os disk and the data disk. Delete partitions on the data disk (/dev/sdc), reapply prepare-disk.sh, and rerun disk swap.
-# - ESXi starts with 'no network adapters'
-#   The Ethernet controller driver for 'Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]' does not work.
-#   See https://kb.vmware.com/s/article/60421?lang=en_US
+# - Creation of ESXi VM fails. Custom-data of az vm create was not processed.
 #   workaround: none
-#               For ESXi 6.5 injecting driver MLNX-NATIVE-ESX-ConnectX-3_3.16.11.10-10EM-650.0.0.4598673-offline_bundle-12539849 didn't work yet.
+#               delete resource group and rerun script.
+# - ESXi starts with 'no network adapters'
+#   workaround: none
+#               Findings:
+#                  The Azure Standard_DS3_v2 offering includes the accelerated networking feature, and exposes ConnectX-3®/Pro as nic type.
+#                  lspci output on Photon OS (tdnf install pciutils):
+#                  lspci | grep Mellanox
+#                     82d1:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
+#                     Subsystem: Mellanox Technologies Device [15b3:61b0]
+#                     9832:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
+#                     Subsystem: Mellanox Technologies Device [15b3:61b0]
+#                  dmesg output on Photon OS (tdnf install usbutils):
+#                  dmesg | grep virtual
+#                     [    0.088113] Booting paravirtualized kernel on bare hardware
+#                     [    0.592879] VMware vmxnet3 virtual NIC driver - version 1.4.16.0-k-NAPI
+#                     [    1.109043] systemd[1]: Detected virtualization microsoft.
+#                     [    4.618174] systemd[1]: Detected virtualization microsoft.
+#                     [    8.898099] mlx4_core 9ba0:00:02.0: Detected virtual function - running in slave mode
+#                     [    8.928888] mlx4_core 85e5:00:02.0: Detected virtual function - running in slave mode
+#                  According to https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver (click on View the list of the latest VMware driver version for Mellanox products)
+#                  the nic type ConnectX-3®/Pro is not officially supported on any VMware ESXi version for SR-IOV Ethernet.
+#               It is unknown if there is an Azure VM offering with accelerating networking specifically using a newer Mellanox nic type ConnectX®-4 / Lx or ConnectX®-5 / Ex.
 #
+
 
 function create-AzVM-vESXi_usingPhotonOS{
    [cmdletbinding()]
@@ -126,7 +144,7 @@ function create-AzVM-vESXi_usingPhotonOS{
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$VMLocalAdminUser="adminuser", #all small letters
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$VMLocalAdminPassword = "PhotonOS123!" , #pwd must be 7-12 characters
+        [String]$VMLocalAdminPassword = "PhotonOs123!" , #pwd must be 7-12 characters
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$BashfileName="prepare-disk.sh"		
     )
@@ -274,7 +292,7 @@ if (([string]::IsNullOrEmpty($nic2)))
 $locationstack=get-location
 set-location -Path ${PSScriptRoot}
 
-# az vm create with ESXi creation script prepare-disk.sh
+# az vm create with custom-data
 try {
 	az vm create --resource-group $ResourceGroupName --location $LocationName --name $vmName `
 	--size $VMSize `
@@ -298,7 +316,7 @@ set-location -path $locationstack
 
 # Step #7: convert the disks created to managed disks, detach and re-attach the bootable ESXi data disk as os disk. Afterwards the VM is started.
 # -----------------------------------------------------------------------------------------------------------------------------------------------
-# The VM is configured through custom-data to automatically power down. Wait for powerstate stopped.
+# The VM is configured through custom-data to automatically power down. Wait for PowerState/stopped.
 $Timeout = 1800
 $i = 0
 for ($i=0;$i -lt $Timeout; $i++) {
