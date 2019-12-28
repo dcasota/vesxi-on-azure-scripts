@@ -13,7 +13,7 @@ If you want to go for more hypervisor software learning, and without the need to
   - https://kb.vmware.com/s/article/2009916
   - https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization
   
-Automation&Integration engineers often uses nested hypervisor labs to test their kickstart/setup/configuration scripts without the need of tests always allocating own realworld physical hardware. That said, keep in mind the operational economy radius of realworld physical hardware. It doesn't end with nested hypervisors. There is degraded value of running compute resources in a nested virtualization environment only.
+Automation&Integration engineers often uses nested hypervisor labs to test their kickstart/setup/configuration scripts without the need of tests always allocating own realworld physical hardware. That said, keep in mind the operational economy radius of realworld physical hardware. It doesn't end with nested hypervisors: There is degraded value of running compute resources in a nested virtualization environment only.
 
 Realworld physical hardware is a key point in a 'type-1 hypervisor running in a VM on top of a type-1 hypervisor' scenario. Some nested hypervisor configurations are technically possible. If you run into issues with a nested lab, give up or try to fix it on your own support. 
 
