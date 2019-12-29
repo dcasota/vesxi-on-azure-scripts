@@ -1,13 +1,31 @@
 #!/bin/sh
 #
 # Prepare a vhd data disk device as bootable VMware ESXi Hypervisor
+#
+# The bash script configures an attached data disk as ESXi bootable medium. It must run on VMware Photon OS. And you have to enter your location of the ESXi ISO medium. See comments inside the script.
+# The script processes following steps:
+# 1. Configure sshd
+# 2. delete partitions on the data disk. Comment: In the context of Azure page blob only the data disk .vhd (conectix) header is needed for creating a bootable disk.
+# 3. dynamically create a bash file to be scheduled once as configurebootdisk.service after a reboot
+# 4. reboot, afterwards start the configurebootdisk.service created:
+#    4.1. download an ESXi ISO. Specify the variable ISOFILENAME. The options tested are download from a vendor URL or download from a Google drive download link.
+#         In case of using a vendor URL, uncomment the lines VENDORURL=..., insert the VendorURL, and uncomment the next line curl -O -J -L $VENDORURL.
+#         In case of using a Google drive download link, uncomment the lines beginning with GOOGLEDRIVEFILEID=, insert your file id, and uncomment the lines beginning with GOOGLEDRIVEURL and wget --load-cookies.
+#    4.2. partition the attached data disk
+#    4.3. format the data disk as FAT32. Hence, some packages and mtools-4.0.23.tar.gz used are installed temporarily.
+#    4.4. install Syslinux bootlader 3.86 for ESXi on the data disk. syslinux-3.86.tar.xz is installed temporarily.
+#    4.5. mount and copy ESXi content to the data disk
+#    4.6. In the context of Azure, enable serial console redirection and add virtualization extension compatibility setting.
+#         This is an important step to make run serial console for the setup phase of ESXi VM on Azure, as well as providing the compatibility setting like iovDisableIR=TRUE, ignoreHeadless=TRUE and noIOMMU to be passed for grub.
+#    4.7. power down the VM
 # 
 #
 # History
-# 0.1  10.12.2019   dcasota  UNFINISHED! WORK IN PROGRES!
+# 0.1  10.12.2019   dcasota  UNFINISHED! WORK IN PROGRESS!
+#
 #
 # Prerequisites:
-#    - VMware Photon OS 3.0
+#    - runs on VMware Photon OS 3.0
 #    - Run as root
 #    - attached disk /dev/sdc
 #    - network connectivity
@@ -28,8 +46,8 @@ systemctl enable sshd
 systemctl restart sshd
 
 
-# Step #2: delete partitions on the page blob data disk
-# -----------------------------------------------------
+# Step #2: delete partitions on the data disk
+# -------------------------------------------
 # On Azure the data disk resources might be presented as busy. A reboot is necessary to delete partitions successfully.
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
@@ -56,7 +74,7 @@ cat > $BASHFILE <<'EOF'
 #!/bin/sh
 cd /root
 
-ISOFILENAME="ESXi-6.5.0-20191204001-standard-customized.iso"
+ISOFILENAME="ESXi-6.0.0-20191204001-standard-customized.iso"
 
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
@@ -72,6 +90,7 @@ tdnf install -y tar wget curl sed syslinux
 # TODO VMware.Imagebuilder compatibility
 # TODO download and inject Mellanox offline bundle
 # https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver
+# For ESXi 6.0 See https://my.vmware.com/group/vmware/details?downloadGroup=DT-ESX60-MELLANOX-NMLX4_EN-31555&productId=491
 # wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
 # mkdir ./driver-offline-bundle
 # ./ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
@@ -83,7 +102,7 @@ tdnf install -y tar wget curl sed syslinux
 # curl -O -J -L $VENDORURL
 
 # Option #3: Download from a Google Drive Download Link
-GOOGLEDRIVEFILEID="1R1-MYANHo3FKxlKmx5JwzQJmCWDGNvan"
+GOOGLEDRIVEFILEID="1CUuwSUzA5eu82G90yueNQATAopoJRGnt"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -173,7 +192,7 @@ sed 's/DEFAULT menu.c32/&\nserial 0 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUN
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 # replace line "APPEND -c boot.cfg" with "APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1" in syslinux.cfg
 sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
-# replace line "kernelopt=cdromBoot runweasel" with "kernelopt=runweasel iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none cdromBoot" in boot.cfg
+# replace line "kernelopt=" with "kernelopt=iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none" in boot.cfg
 # virtualization extension compatibility setting to install ESXi on more Azure VM offerings successfully:
 # 'com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none' see weblinks above about installing ESXi over serial console
 # iovDisableIR=TRUE disables interrupt remapping as PCI devices may stop responding when using interrupt remapping. See https://kb.vmware.com/s/article/1030265
@@ -181,8 +200,9 @@ sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2
 # See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
 # noIOMMU see https://communities.vmware.com/thread/515358
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
-sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none cdromBoot/' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+sed 's/kernelopt=/kernelopt=iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none/' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 # same setting for EFI
+cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg
 #cleanup
 cd /root

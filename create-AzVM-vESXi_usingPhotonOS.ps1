@@ -347,6 +347,7 @@ for ($i=0;$i -lt $Timeout; $i++) {
 		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
 
 		    Start-AzVM -ResourceGroupName $resourceGroupName -Name $vmName
+            break
         }
     }
 }
