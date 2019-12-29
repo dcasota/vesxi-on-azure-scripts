@@ -53,8 +53,8 @@ The bash script configures an attached data disk as ESXi bootable medium. It mus
 
   1. Configure sshd. Use the LocalAdminUser credentials specified in ```create-AzVM-vESXi_usingPhotonOS.ps1``` for ssh login.
 
-  2. delete partitions on the page blob data disk.
-     Comment: only the data disk .vhd (conectix) header is needed for creating a bootable disk.
+  2. delete partitions on the data disk.
+     Comment: In the context of Azure page blob only the data disk .vhd (conectix) header is needed for creating a bootable disk.
 
   3. dynamically create a bash file to be scheduled once as configurebootdisk.service after a reboot
 
@@ -75,9 +75,9 @@ The bash script configures an attached data disk as ESXi bootable medium. It mus
  
      4.5. mount and copy ESXi content to the data disk
 
-     4.6. enable serial console redirection and add virtualization extension compatibility setting
+     4.6. In the context of Azure, enable serial console redirection and add virtualization extension compatibility setting.
           This is an important step to make run serial console for the setup phase of ESXi VM on Azure, as well as
-          providing the compatibility setting iovDisableIR=TRUE, ignoreHeadless=TRUE and noIOMMU to be passed for grub.
+          providing the compatibility setting like iovDisableIR=TRUE, ignoreHeadless=TRUE and noIOMMU to be passed for grub.
 
      4.7. power down the VM
   
