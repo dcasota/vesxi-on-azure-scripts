@@ -74,7 +74,7 @@ cat > $BASHFILE <<'EOF'
 #!/bin/sh
 cd /root
 
-ISOFILENAME="ESXi-6.0.0-20191204001-standard-customized.iso"
+ISOFILENAME="ESXi-6.5.0-20191204001-standard-customized.iso"
 
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
@@ -102,7 +102,7 @@ tdnf install -y tar wget curl sed syslinux
 # curl -O -J -L $VENDORURL
 
 # Option #3: Download from a Google Drive Download Link
-GOOGLEDRIVEFILEID="1CUuwSUzA5eu82G90yueNQATAopoJRGnt"
+GOOGLEDRIVEFILEID="1Y9PYIXLab9akG_hlLgEUSiDFfPP8UYAG"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -190,8 +190,9 @@ mv $VHDMOUNT/isolinux.cfg $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 sed 's/DEFAULT menu.c32/&\nserial 0 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
-# replace line "APPEND -c boot.cfg" with "APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1" in syslinux.cfg
-sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+# replace line "APPEND -c boot.cfg" with "APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1 iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE" in syslinux.cfg
+sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1 iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+
 # replace line "kernelopt=" with "kernelopt=iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none" in boot.cfg
 # virtualization extension compatibility setting to install ESXi on more Azure VM offerings successfully:
 # 'com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none' see weblinks above about installing ESXi over serial console
@@ -200,7 +201,7 @@ sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2
 # See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
 # noIOMMU see https://communities.vmware.com/thread/515358
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
-sed 's/kernelopt=/kernelopt=iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none/' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+sed 's/kernelopt=/kernelopt=iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none /' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 # same setting for EFI
 cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg

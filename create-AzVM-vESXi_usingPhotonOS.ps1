@@ -2,6 +2,8 @@
 # Create a VMware ESXi VM on Microsoft Azure
 #
 # The script creates a VM, temporary with VMware Photon OS. An attached data disk is used for the installation bits of ESXi. The prepared data disk then is promoted as OS disk.
+#
+# USE THE SCRIPT IT AT YOUR OWN RISK! VMware ESXi on Azure is NOT OFFICIALLY SUPPORTED. If you run into issues with a nested lab, give up or try to fix it on your own support
 # 
 #
 # History
@@ -13,44 +15,31 @@
 #    - VMware Photon OS 3.0 .vhd image
 #    - Azure account
 #
+#
+#
 # Important information:
-# The ESXi VM offering on Azure must support:
-# - Accelerated Networking. Without acceleratednetworking, network adapters are not presented to the ESXi VM.
-# - Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it.
 #
-# The script uses the Standard_DS3_v2 offering: 4vCPU,14GB RAM, Accelerating Networking: Yes, Premium disk support:Yes. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes-general
+#    Nested virtualization on Azure support:
 #
-# Alternative VM sizes with accelerating networking as per 27.12.2019 are:
-# Standard_D3_v2, Standard_D12_v2, Standard_D3_v2_Promo, Standard_D12_v2_Promo, Standard_DS3_v2, Standard_DS12_v2, Standard_DS13-4_v2, Standard_DS14-4_v2, Standard_DS3_v2_Promo, Standard_DS12_v2_Promo, 
-# Standard_DS13-4_v2_Promo, Standard_DS14-4_v2_Promo, Standard_F4, Standard_F4s, Standard_D8_v3, Standard_D8s_v3, Standard_D32-8s_v3, Standard_E8_v3, Standard_E8s_v3, Standard_D3_v2_ABC, Standard_D12_v2_ABC, Standard_F4_ABC, Standard_F8s_v2, Standard_D4_v2, 
-# Standard_D13_v2, Standard_D4_v2_Promo, Standard_D13_v2_Promo, Standard_DS4_v2, Standard_DS13_v2, Standard_DS14-8_v2, Standard_DS4_v2_Promo, Standard_DS13_v2_Promo, Standard_DS14-8_v2_Promo, Standard_F8, Standard_F8s, Standard_M64-16ms, Standard_D16_v3, 
-# Standard_D16s_v3, Standard_D32-16s_v3, Standard_D64-16s_v3, Standard_E16_v3, Standard_E16s_v3, Standard_E32-16s_v3, Standard_D4_v2_ABC, Standard_D13_v2_ABC, Standard_F8_ABC, Standard_F16s_v2, Standard_D5_v2, Standard_D14_v2, Standard_D5_v2_Promo, 
-# Standard_D14_v2_Promo, Standard_DS5_v2, Standard_DS14_v2, Standard_DS5_v2_Promo, Standard_DS14_v2_Promo, Standard_F16, Standard_F16s, Standard_M64-32ms, Standard_M128-32ms, Standard_D32_v3, Standard_D32s_v3, Standard_D64-32s_v3, Standard_E32_v3, 
-# Standard_E32s_v3, Standard_E32-8s_v3, Standard_E32-16_v3, Standard_D5_v2_ABC, Standard_D14_v2_ABC, Standard_F16_ABC, Standard_F32s_v2, Standard_D15_v2, Standard_D15_v2_Promo, Standard_D15_v2_Nested, Standard_DS15_v2, Standard_DS15_v2_Promo, 
-# Standard_DS15_v2_Nested, Standard_D40_v3, Standard_D40s_v3, Standard_D15_v2_ABC, Standard_M64ms, Standard_M64s, Standard_M128-64ms, Standard_D64_v3, Standard_D64s_v3, Standard_E64_v3, Standard_E64s_v3, Standard_E64-16s_v3, Standard_E64-32s_v3, 
-# Standard_F64s_v2, Standard_F72s_v2, Standard_M128s, Standard_M128ms, Standard_L8s_v2, Standard_L16s_v2, Standard_L32s_v2, Standard_L64s_v2, SQLGL, SQLGLCore, Standard_D4_v3, Standard_D4s_v3, Standard_D2_v2, Standard_DS2_v2, Standard_E4_v3, Standard_E4s_v3, 
-# Standard_F2, Standard_F2s, Standard_F4s_v2, Standard_D11_v2, Standard_DS11_v2, AZAP_Performance_ComputeV17C, AZAP_Performance_ComputeV17C_DDA, AZAP_Performance_ComputeV17C_HalfNode, Standard_PB6s, Standard_PB12s, Standard_PB24s, Standard_L80s_v2, 
-# Standard_M8ms, Standard_M8-4ms, Standard_M8-2ms, Standard_M16ms, Standard_M16-8ms, Standard_M16-4ms, Standard_M32ms, Standard_M32-8ms, Standard_M32-16ms, Standard_M32ls, Standard_M32ts, Standard_M64ls, Standard_E64i_v3, Standard_E64is_v3, 
-# Standard_E4-2s_v3, Standard_E8-4s_v3, Standard_E8-2s_v3, Standard_E16-4s_v3, Standard_E16-8s_v3, Standard_E20s_v3, Standard_E20_v3, Standard_D11_v2_Promo, Standard_D2_v2_Promo, Standard_DS11_v2_Promo, Standard_DS2_v2_Promo, Standard_M208ms_v2, 
-# Standard_MDB16s, Standard_MDB32s, Experimental_E64-40s_v3, Standard_DS11-1_v2, Standard_DS12-1_v2, Standard_DS12-2_v2, Standard_DS13-2_v2, MSODSG5, Special_CCX_DS13_v2, Special_CCX_DS14_v2, F2_Flex, F4_Flex, F8_Flex, F16_Flex, F32_Flex, F64_Flex, F2s_Flex, 
-# F4s_Flex, F8s_Flex, F16s_Flex, F32s_Flex, F64s_Flex, D2_Flex, D4_Flex, D8_Flex, D16_Flex, D32_Flex, D64_Flex, D2s_Flex, D4s_Flex, D8s_Flex, D16s_Flex, D32s_Flex, D64s_Flex, E2_Flex, E4_Flex, E8_Flex, E16_Flex, E32_Flex, E64_Flex, E64i_Flex, E2s_Flex, 
-# E4s_Flex, E8s_Flex, E16s_Flex, E32s_Flex, E64s_Flex, E64is_Flex, Standard_M416ms_v2, Standard_M416s_v2, Standard_M208s_v2, FCA_E64-52s_v3, FCA_E32-28s_v3, FCA_E32-26s_v3, FCA_E32-24s_v3, FCA_E16-14s_v3, FCA_E16-12s_v3, FCA_E16-10s_v3, FCA_E8-6s_v3, 
-# Special_D4_v2, D48_Flex, D48s_Flex, E20_Flex, E20s_Flex, E48_Flex, E48s_Flex, F48s_Flex, Standard_D48_v3, Standard_D48s_v3, Standard_E48_v3, Standard_E48s_v3, Standard_F48s_v2, Standard_L48s_v2, SQLG5_IaaS, Standard_M128, Standard_M128m, Standard_M64,
-# Standard_M64m, AZAP_Performance_ComputeV17C_12, Standard_B12ms, Standard_B16ms, Standard_B20ms, SQLG5-80m, AZAP_Performance_ComputeV17C_QuarterNode, Standard_DS15i_v2, Standard_D15i_v2, Standard_F72fs_v2, AZAP_Performance_ComputeV17B_76, 
-# Standard_ND40s_v3, SQLG5_NP80, SQLG6, StandardM208msv2, SQLG6_IaaS, SQLG7_AMD, SQLG6_NP2, SQLG6_NP4, SQLG6_NP8, SQLG6_NP16, SQLG6_NP24, SQLG6_NP32, SQLG6_NP40, SQLG6_NP64, SQLG6_NP80, SQLG6_NP96, SQLG6_NP96s, Standard_D4a_v3, Standard_D8a_v3, 
-# Standard_D16a_v3, Standard_D32a_v3, Standard_D48a_v3, Standard_D64a_v3, Standard_D96a_v3, Standard_D104a_v3, Standard_D4as_v3, Standard_D8as_v3, Standard_D16as_v3, Standard_D32as_v3, Standard_D48as_v3, Standard_D64as_v3, Standard_D96as_v3, 
-# Standard_D104as_v3, Standard_E4a_v3, Standard_E8a_v3, Standard_E16a_v3, Standard_E32a_v3, Standard_E48a_v3, Standard_E64a_v3, Standard_E96a_v3, Standard_E104a_v3, Standard_E4as_v3, Standard_E8as_v3, Standard_E16as_v3, Standard_E32as_v3, Standard_E48as_v3, 
-# Standard_E64as_v3, Standard_E96as_v3, Standard_E104as_v3, SQLG5_NP80s, Standard_D4_v4, Standard_D8_v4, Standard_D16_v4, Standard_D32_v4, Standard_D48_v4, Standard_D64_v4, Standard_D4d_v4, Standard_D8d_v4, Standard_D16d_v4, Standard_D32d_v4, 
-# Standard_D48d_v4, Standard_D64d_v4, Standard_D4s_v4, Standard_D8s_v4, Standard_D16s_v4, Standard_D32s_v4, Standard_D48s_v4, Standard_D64s_v4, Standard_D4ds_v4, Standard_D8ds_v4, Standard_D16ds_v4, Standard_D32ds_v4, Standard_D48ds_v4, Standard_D64ds_v4, 
-# Standard_E4_v4, Standard_E8_v4, Standard_E16_v4, Standard_E20_v4, Standard_E32_v4, Standard_E48_v4, Standard_E64_v4, Standard_E4d_v4, Standard_E8d_v4, Standard_E16d_v4, Standard_E20d_v4, Standard_E32d_v4, Standard_E48d_v4, Standard_E64d_v4, 
-# Standard_E4s_v4, Standard_E8s_v4, Standard_E16s_v4, Standard_E20s_v4, Standard_E32s_v4, Standard_E48s_v4, Standard_E64s_v4, Standard_E64is_v4, Standard_E4ds_v4, Standard_E8ds_v4, Standard_E16ds_v4, Standard_E20ds_v4, Standard_E32ds_v4, Standard_E48ds_v4, 
-# Standard_E64ds_v4, Standard_E64ids_v4, Standard_DC2s_v2, Standard_DC4s_v2, Standard_DC8_v2, SQLDCGen6_2, AZAP_Performance_ComputeV17W_76, AZAP_Performance_ComputeV17B_40, Standard_D4a_v4, Standard_D4as_v4, Standard_D8a_v4, Standard_D8as_v4, 
-# Standard_D16a_v4, Standard_D16as_v4, Standard_D32a_v4, Standard_D32as_v4, Standard_D48a_v4, Standard_D48as_v4, Standard_D64a_v4, Standard_D64as_v4, Standard_D96a_v4, Standard_D96as_v4, Standard_E4a_v4, Standard_E4as_v4, Standard_E8a_v4, Standard_E8as_v4, 
-# Standard_E16a_v4, Standard_E16as_v4, Standard_E20a_v4, Standard_E20as_v4, Standard_E32a_v4, Standard_E32as_v4, Standard_E48a_v4, Standard_E48as_v4, Standard_E64a_v4, Standard_E64as_v4, Standard_E96a_v4, Standard_E96as_v4, Standard_E64is_v4_SPECIAL, 
-# Standard_E64ids_v4_SPECIAL, Standard_E4-2s_v4, Standard_E8-2s_v4, Standard_E8-4s_v4, Standard_E16-8s_v4, Standard_E16-4s_v4, Standard_E32-16s_v4, Standard_E32-8s_v4, Standard_E64-32s_v4, Standard_E64-16s_v4, Standard_E4-2ds_v4, Standard_E8-4ds_v4, 
-# Standard_E8-2ds_v4, Standard_E16-8ds_v4, Standard_E16-4ds_v4, Standard_E32-16ds_v4, Standard_E32-8ds_v4, Standard_E64-32ds_v4, Standard_E64-16ds_v4, SQLG7, SQLG7_IaaS, SQLG6_NP56, Experimental_Olympia20ls, Experimental_Olympia20s, Experimental_Olympia20ms, 
-# Experimental_Olympia40ls, Experimental_Olympia40s, Experimental_Olympia40ms, Experimental_Olympia80ls, Experimental_Olympia80s, Experimental_Olympia80ms, Standard_E64i_v4_SPECIAL."
+#    - Azure Stack Level 0,1,2 nested virtualization:
+#
+#       – Level 0 Azure hardware virtualization layer inside Azure stack is officially supported for Level 1 Hypervisor Hyper-V only.
+#         And, there are Microsoft CSP-specific solutions (like Azure VMware Solution by CloudSimple).
+#         There are no Microsoft baremetal-kubernetesified, ipmi/iLO/iDRAC/../bmc-included Virtual Machines offerings.
 # 
+#       - “Level 2 nested virtualization” is supported for Windows Server Virtual Machines with Hyper-V only, in reference to
+#         https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization, and,
+#         only using the Dv3 and Ev3 VM sizes, or premium disk support possible through Esv3. Accelerated Networking is included
+#         according to https://azure.microsoft.com/de-de/blog/maximize-your-vm-s-performance-with-accelerated-networking-now-generally-available-for-both-windows-and-linux/ .
+#
+#    - VMware statement: https://kb.vmware.com/s/article/2009916
+#
+# 
+# The ESXi VM offering on Azure must support:
+#    - Accelerated Networking. Without acceleratednetworking, network adapters are not presented to the ESXi VM.
+#    - Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it.
+#    The script uses the Standard_E4s_v3 offering: 4vCPU,32GB RAM, Accelerating Networking: Yes, Premium disk support:Yes. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes-general
+#
 #
 # Known issues:
 # - Creation of ESXi VM fails. Custom-data of az vm create was not processed.
@@ -59,7 +48,7 @@
 # - ESXi starts with 'no network adapters'
 #   workaround: none
 #               Findings:
-#                  The Azure Standard_DS3_v2 offering includes the accelerated networking feature, and exposes ConnectX-3®/Pro as nic type.
+#                  The Azure Standard_E4s_v3 offering includes the accelerated networking feature, and exposes ConnectX-3®/Pro as nic type.
 #                  lspci output on Photon OS (tdnf install pciutils):
 #                  lspci | grep Mellanox
 #                     82d1:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
@@ -97,7 +86,7 @@ function create-AzVM-vESXi_usingPhotonOS{
         [System.Management.Automation.Credential()]$cred = (Get-credential -message 'Enter a username and password.'),
 
         [Parameter(Mandatory = $false)]
-        [ValidateSet('westus','westeurope', 'switzerlandnorth','switzerlandwest')]
+        [ValidateSet('eastus','westus','westeurope')]
         [String]$LocationName="westeurope",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$ResourceGroupName="photonos-lab-rg",
@@ -117,7 +106,7 @@ function create-AzVM-vESXi_usingPhotonOS{
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$VMName = "photonos",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$VMSize = "Standard_DS3_v2",
+        [String]$VMSize = "Standard_E4s_v3",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$NICName1 = "${VMName}nic1",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
@@ -331,7 +320,7 @@ for ($i=0;$i -lt $Timeout; $i++) {
 		    # Convert to managed disks https://docs.microsoft.com/en-us/azure/virtual-machines/windows/convert-unmanaged-to-managed-disks
 		    ConvertTo-AzVMManagedDisk -ResourceGroupName $ResourceGroupName -VMName $vmName
 		    # Starts VM automatically
-
+            pause
 		    # Make sure the VM is stopped but not deallocated so you can detach/attach disk
 		    Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
 		    # Detach the prepared data disk
