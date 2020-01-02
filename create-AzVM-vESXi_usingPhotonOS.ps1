@@ -1,9 +1,9 @@
 ﻿#
-# Create a VMware ESXi VM on Microsoft Azure
+# Create a VMware ESXi on a Microsoft Azure offering
 #
-# The script creates a VM, temporary with VMware Photon OS. An attached data disk is used for the installation bits of ESXi. The prepared data disk then is promoted as OS disk.
+# The script creates a VM, temporary with VMware Photon OS. An attached data disk is used for the installation bits of VMware ESXi. The prepared data disk then is promoted as OS disk.
 #
-# USE THE SCRIPT IT AT YOUR OWN RISK! VMware ESXi on Azure is NOT OFFICIALLY SUPPORTED. If you run into issues with a nested lab, give up or try to fix it on your own support
+# USE THE SCRIPT IT AT YOUR OWN RISK! VMware ESXi on Azure is NOT OFFICIALLY SUPPORTED. If you run into issues with a nested lab, give up or try to fix it on your own support.
 # 
 #
 # History
@@ -16,6 +16,59 @@
 #    - Azure account
 #
 #
+# Parameter LocalFilePath
+#    Specifies the path to the unzipped VMware Photon OS .vhd
+# Parameter BlobName
+#    The Azure Blob Name for the uploaded Photon OS .vhd
+# Parameter cred
+#    Azure login credentials
+# Parameter LocationName
+#    Azure location name where to create or lookup the resource group
+# Parameter ResourceGroupName
+#    Azure resource group name
+# Parameter StorageAccountName
+#    Azure storage account name
+# Parameter ContainerName
+#    Azure storage container name 
+# Parameter NetworkName
+#    Azure VNet Network name
+# Parameter VnetAddressPrefix
+#    Azure VNet subnet. Use the format like "192.168.0.0/16"
+# Parameter ServerSubnetAddressPrefix
+#    Azure Server subnet address prefix. Use the format like "192.168.1.0/24"
+# Parameter VMName
+#    Name of the Azure VM
+# Parameter VMSize
+#    Azure offering. Use the format like "Standard_E4s_v3". See below Important information.
+# Parameter NICName1
+#    Name for the first nic adapter
+# Parameter Ip1Address
+#    Private IP4 address of the first nic adapter exposed to the Azure VM
+# Parameter PublicIPDNSName
+#    Public IP4 name of the first nic adapter
+# Parameter NICName2
+#    Name for the second nic adapter exposed to the Azure VM
+# Parameter Ip2Address
+#    Private IP4 address of the second nic adapter
+# Parameter nsgName
+#    Name of the network security group, the nsg is applied to both nics
+# Parameter diskName
+#    Name of the Photon OS disk
+# Parameter diskSizeGB
+#    Disk size of the Photon OS disk. Minimum is 16gb
+# Parameter Computername
+#    Hostname Photon OS. The hostname is not set for ESXi (yet).
+# Parameter VMLocalAdminUser
+#    Local Photon OS user
+# Parameter VMLocalAdminPassword
+#    Local Photon OS user password. Must be 7-12 characters long, and meet pwd complexitiy rules.
+# Parameter BashfileName
+#    Name of the bash file to be processed as vm create custom-data. The script be stored in the script file path.
+# Parameter ESXiDiskName
+#    Name of the ESXi boot medium disk. The disk is attached as VM data disk.
+# Parameter ESXiBootdiskSizeGB
+#    Disk size of the ESXi boot medium disk. Minimum is 16gb
+#		
 #
 # Important information:
 #
@@ -35,14 +88,14 @@
 #    - VMware statement: https://kb.vmware.com/s/article/2009916
 #
 # 
-# The ESXi VM offering on Azure must support:
-#    - Accelerated Networking. Without acceleratednetworking, network adapters are not presented to the ESXi VM.
-#    - Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it.
-#    The script uses the Standard_E4s_v3 offering: 4vCPU,32GB RAM, Accelerating Networking: Yes, Premium disk support:Yes. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes-general
+#    The ESXi VM offering on Azure must support:
+#       - Accelerated Networking. Without acceleratednetworking, network adapters are not presented to the ESXi VM.
+#       - Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it.
+#       The script uses the Standard_E4s_v3 offering: 4vCPU,32GB RAM, Accelerating Networking: Yes, Premium disk support:Yes. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes-memory#esv3-series
 #
 #
 # Known issues:
-# - Creation of ESXi VM fails. Custom-data of az vm create was not processed.
+# - Creation of ESXi VM fails. Custom-data of az vm create was not processed. On the console you see an error of missing ovf-env.xml file.
 #   workaround: none
 #               delete resource group and rerun script.
 # - ESXi starts with 'no network adapters'
@@ -73,8 +126,8 @@ function create-AzVM-vESXi_usingPhotonOS{
    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        # This is the locally unzipped .vhd from https://vmware.bintray.com/photon/3.0/GA/azure/photon-azure-3.0-26156e2.vhd.tar.gz
-        # This is the locally unzipped .vhd from https://vmware.bintray.com/photon/3.0/GA/azure/photon-azure-3.0-9355405.vhd.tar.gz
+        # Store unzipped Photon OS 3.0 GA .vhd from https://vmware.bintray.com/photon/3.0/GA/azure/photon-azure-3.0-26156e2.vhd.tar.gz
+        # Store unzipped Photon OS 3.0 rev2 .vhd from https://vmware.bintray.com/photon/3.0/GA/azure/photon-azure-3.0-9355405.vhd.tar.gz
         $LocalFilePath="J:\photon-azure-3.0-9355405.vhd.tar\photon-azure-3.0-9355405.vhd",
 		# Photon OS Image Blob name
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
@@ -320,7 +373,7 @@ for ($i=0;$i -lt $Timeout; $i++) {
 		    # Convert to managed disks https://docs.microsoft.com/en-us/azure/virtual-machines/windows/convert-unmanaged-to-managed-disks
 		    ConvertTo-AzVMManagedDisk -ResourceGroupName $ResourceGroupName -VMName $vmName
 		    # Starts VM automatically
-            pause
+
 		    # Make sure the VM is stopped but not deallocated so you can detach/attach disk
 		    Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
 		    # Detach the prepared data disk
