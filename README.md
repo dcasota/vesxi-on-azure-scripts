@@ -82,3 +82,10 @@ The bash script configures an attached data disk as ESXi bootable medium. It mus
      4.7. power down the VM
   
 UNFINISHED! WORK IN PROGRESS!
+02.01.2020
+The ESXi setup starts but fails with No Network Adapter found. Some efforts are documented at
+- https://communities.vmware.com/thread/623892
+- https://communities.vmware.com/thread/623049
+- https://github.com/MicrosoftDocs/azure-docs/issues/45303
+
+Suggestions about the homelab project are welcome.
