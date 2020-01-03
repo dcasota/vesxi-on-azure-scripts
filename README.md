@@ -40,6 +40,7 @@ The script processes following steps:
  2. create a resource group and storage container
  3. upload the Photon OS .vhd as page blob
  4. create virtual network and security group
+    (ToDo: As soon as the ESXi installation has finished, more communication ports have to be configured)
  5. create two nics, one with a public IP address
  6. create the vm with Photon OS as os disk an a data disk processed with cloud-init custom data from ```$Bashfilename```
     See ```prepare-disk.sh``` for detailed information.
@@ -75,9 +76,11 @@ The bash script configures an attached data disk as ESXi bootable medium. It mus
  
      4.5. mount and copy ESXi content to the data disk
 
-     4.6. In the context of Azure, enable serial console redirection and add virtualization extension compatibility setting.
-          This is an important step to make run serial console for the setup phase of ESXi VM on Azure, as well as
-          providing the compatibility setting like iovDisableIR=TRUE, ignoreHeadless=TRUE and noIOMMU to be passed for grub.
+     4.6. In the context of Azure, enabling serial console redirection becomes important.
+          The two files syslinux.cfg and boot.cfg are modified to make run serial console for the setup phase of ESXi VM on Azure.
+          In addition, more compatibility settings to be passed in boot.cfg are necessary as the ESXi setup starts but fails with
+          No Network Adapter. The integration of the detected network adapter Mellanox ConnectX-3 virtual function is unfinished
+          (see below UNFINISHED! WORK IN PROGRESS!).
 
      4.7. power down the VM
   
@@ -91,4 +94,4 @@ The ESXi setup starts but fails with No Network Adapter found. Some efforts are 
 - https://communities.vmware.com/thread/623049
 - https://github.com/MicrosoftDocs/azure-docs/issues/45303
 
-Suggestions about the homelab project are welcome.
+Suggestions and issues discussions about the homelab project are welcome.
