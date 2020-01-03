@@ -17,9 +17,9 @@
 #
 #
 # Parameter LocalFilePath
-#    Specifies the path to the unzipped VMware Photon OS .vhd
+#    Specifies the local file path to the unzipped VMware Photon OS .vhd
 # Parameter BlobName
-#    The Azure Blob Name for the uploaded Photon OS .vhd
+#    Azure Blob Name for the Photon OS .vhd
 # Parameter cred
 #    Azure login credentials
 # Parameter LocationName
@@ -39,7 +39,7 @@
 # Parameter VMName
 #    Name of the Azure VM
 # Parameter VMSize
-#    Azure offering. Use the format like "Standard_E4s_v3". See below Important information.
+#    Azure offering. Use the format like "Standard_E4s_v3". See 'Important information' below.
 # Parameter NICName1
 #    Name for the first nic adapter
 # Parameter Ip1Address
@@ -68,7 +68,12 @@
 #    Name of the ESXi boot medium disk. The disk is attached as VM data disk.
 # Parameter ESXiBootdiskSizeGB
 #    Disk size of the ESXi boot medium disk. Minimum is 16gb
-#		
+#	
+#
+# Example
+# 1. Modify in prepare-disk.sh ISOFILENAME and GOOGLEDRIVEFILEID
+# 2. create-AzVM-vESXi_usingPhotonOS -LocalFilePath 'InsertYourPathToPhotonOsvhd' -cred (get-credential)
+# 	
 #
 # Important information:
 #
@@ -78,7 +83,7 @@
 #
 #       – Level 0 Azure hardware virtualization layer inside Azure stack is officially supported for Level 1 Hypervisor Hyper-V only.
 #         And, there are Microsoft CSP-specific solutions (like Azure VMware Solution by CloudSimple).
-#         There are no Microsoft baremetal-kubernetesified, ipmi/iLO/iDRAC/../bmc-included Virtual Machines offerings.
+#         There are no Microsoft baremetal-kubernetesified, ipmi/iLO/iDRAC/..-included Virtual Machines offerings.
 # 
 #       - “Level 2 nested virtualization” is supported for Windows Server Virtual Machines with Hyper-V only, in reference to
 #         https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization, and,
@@ -95,30 +100,38 @@
 #
 #
 # Known issues:
-# - Creation of ESXi VM fails. Custom-data of az vm create was not processed. On the console you see an error of missing ovf-env.xml file.
+# - Creation of the VM has finished but custom-data of az vm create was not processed. On the console you see an error of missing ovf-env.xml file.
 #   workaround: none
 #               delete resource group and rerun script.
 # - ESXi starts with 'no network adapters'
 #   workaround: none
 #               Findings:
-#                  The Azure Standard_E4s_v3 offering includes the accelerated networking feature, and exposes ConnectX-3®/Pro as nic type.
-#                  lspci output on Photon OS (tdnf install pciutils):
-#                  lspci | grep Mellanox
-#                     82d1:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
-#                     Subsystem: Mellanox Technologies Device [15b3:61b0]
-#                     9832:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
-#                     Subsystem: Mellanox Technologies Device [15b3:61b0]
-#                  dmesg output on Photon OS (tdnf install usbutils):
-#                  dmesg | grep virtual
-#                     [    0.088113] Booting paravirtualized kernel on bare hardware
-#                     [    0.592879] VMware vmxnet3 virtual NIC driver - version 1.4.16.0-k-NAPI
-#                     [    1.109043] systemd[1]: Detected virtualization microsoft.
-#                     [    4.618174] systemd[1]: Detected virtualization microsoft.
-#                     [    8.898099] mlx4_core 9ba0:00:02.0: Detected virtual function - running in slave mode
-#                     [    8.928888] mlx4_core 85e5:00:02.0: Detected virtual function - running in slave mode
-#                  According to https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver (click on View the list of the latest VMware driver version for Mellanox products)
-#                  the nic type ConnectX-3®/Pro is not officially supported on any VMware ESXi version for SR-IOV Ethernet.
-#               It is unknown if there is an Azure VM offering with accelerating networking specifically using a newer Mellanox nic type ConnectX®-4 / Lx or ConnectX®-5 / Ex.
+#                  The Azure Standard_E4s_v3 offering includes the accelerated networking feature, and exposes ConnectX-3 as nic adapter type.
+#
+#                  Research/Findings:
+#                     lspci output on Photon OS (tdnf install pciutils):
+#                     lspci | grep Mellanox
+#                        82d1:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
+#                        Subsystem: Mellanox Technologies Device [15b3:61b0]
+#                        9832:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
+#                        Subsystem: Mellanox Technologies Device [15b3:61b0]
+#                     dmesg output on Photon OS (tdnf install usbutils):
+#                     dmesg | grep virtual
+#                        [    0.088113] Booting paravirtualized kernel on bare hardware
+#                        [    0.592879] VMware vmxnet3 virtual NIC driver - version 1.4.16.0-k-NAPI
+#                        [    1.109043] systemd[1]: Detected virtualization microsoft.
+#                        [    4.618174] systemd[1]: Detected virtualization microsoft.
+#                        [    8.898099] mlx4_core 9ba0:00:02.0: Detected virtual function - running in slave mode
+#                        [    8.928888] mlx4_core 85e5:00:02.0: Detected virtual function - running in slave mode
+# 
+#                  Mellanox ConnectX-3 [15b3:1004] driver support for VMware ESXi by VMware
+#                  See https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc
+#
+#                  VMware Driver support for Mellanox ConnectX-3 by Mellanox 
+#                  See https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver (click on 'View the list of the latest VMware driver version for Mellanox products')
+#
+#                  Azure VM offering specifically with ConnectX functionality by Microsoft Azure
+#                  (unknown)
 #
 
 
@@ -126,17 +139,14 @@ function create-AzVM-vESXi_usingPhotonOS{
    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        # Store unzipped Photon OS 3.0 GA .vhd from https://vmware.bintray.com/photon/3.0/GA/azure/photon-azure-3.0-26156e2.vhd.tar.gz
-        # Store unzipped Photon OS 3.0 rev2 .vhd from https://vmware.bintray.com/photon/3.0/GA/azure/photon-azure-3.0-9355405.vhd.tar.gz
+        # Local file path of unzipped Photon OS 3.0 GA .vhd from https://vmware.bintray.com/photon/3.0/GA/azure/photon-azure-3.0-26156e2.vhd.tar.gz
+        # Local file path of unzipped Photon OS 3.0 rev2 .vhd from https://vmware.bintray.com/photon/3.0/GA/azure/photon-azure-3.0-9355405.vhd.tar.gz
         $LocalFilePath="J:\photon-azure-3.0-9355405.vhd.tar\photon-azure-3.0-9355405.vhd",
-		# Photon OS Image Blob name
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$BlobName= (split-path $LocalFilePath -leaf) ,	
 
         [Parameter(Mandatory = $false)]
         [ValidateNotNull()]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$cred = (Get-credential -message 'Enter a username and password.'),
+        [System.Management.Automation.Credential()]$cred = (Get-credential -message 'Enter a username and password.'),	
 
         [Parameter(Mandatory = $false)]
         [ValidateSet('eastus','westus','westeurope')]
@@ -146,6 +156,9 @@ function create-AzVM-vESXi_usingPhotonOS{
 
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$StorageAccountName="photonos$(Get-Random)",
+		# Photon OS Image Blob name
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$BlobName= (split-path $LocalFilePath -leaf) ,
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$ContainerName="disks",
 
@@ -157,9 +170,10 @@ function create-AzVM-vESXi_usingPhotonOS{
         [String]$ServerSubnetAddressPrefix="192.168.1.0/24",
 
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$VMName = "photonos",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$VMSize = "Standard_E4s_v3",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$VMName = "photonos",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$NICName1 = "${VMName}nic1",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
@@ -176,6 +190,7 @@ function create-AzVM-vESXi_usingPhotonOS{
         [String]$diskName = "photonosdisk",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$diskSizeGB = '16', # minimum is 16gb
+
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$ESXiDiskName = "ESXi",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
@@ -270,7 +285,7 @@ if (([string]::IsNullOrEmpty($vnet)))
 	$vnet | Set-AzVirtualNetwork
 }
 
-# networksecurityruleconfig
+# networksecurityruleconfig, UNFINISHED as VMware ESXi ports must be included
 $nsg=get-AzNetworkSecurityGroup -Name $nsgName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
 if (([string]::IsNullOrEmpty($nsg)))
 {

@@ -16,7 +16,7 @@
 #    4.4. install Syslinux bootlader 3.86 for ESXi on the data disk. syslinux-3.86.tar.xz is installed temporarily.
 #    4.5. mount and copy ESXi content to the data disk
 #    4.6. In the context of Azure, enable serial console redirection and add virtualization extension compatibility setting.
-#         This is an important step to make run serial console for the setup phase of ESXi VM on Azure, as well as providing the compatibility setting like iovDisableIR=TRUE, ignoreHeadless=TRUE and noIOMMU to be passed for grub.
+#         This is an important step to make run serial console for the setup phase of ESXi VM on Azure, as well as providing the compatibility setting like iovDisableIR=TRUE, ignoreHeadless=TRUE or noIOMMU to be passed for grub.
 #    4.7. power down the VM
 # 
 #
@@ -74,7 +74,8 @@ cat > $BASHFILE <<'EOF'
 #!/bin/sh
 cd /root
 
-ISOFILENAME="ESXi-6.5.0-20191204001-standard-customized.iso"
+# INSERT YOUR ISOFILENAME HERE
+ISOFILENAME="ESXi-6.7.0-20191204001-standard-customized.iso"
 
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
@@ -102,7 +103,11 @@ tdnf install -y tar wget curl sed syslinux
 # curl -O -J -L $VENDORURL
 
 # Option #3: Download from a Google Drive Download Link
-GOOGLEDRIVEFILEID="1Y9PYIXLab9akG_hlLgEUSiDFfPP8UYAG"
+# Example: 
+# raw google drive web url:  https://drive.google.com/open?id=1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l
+# GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
+#
+GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -190,18 +195,29 @@ mv $VHDMOUNT/isolinux.cfg $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 sed 's/DEFAULT menu.c32/&\nserial 0 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
-# replace line "APPEND -c boot.cfg" with "APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1 iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE" in syslinux.cfg
-sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1 iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
-
-# replace line "kernelopt=" with "kernelopt=iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none" in boot.cfg
-# virtualization extension compatibility setting to install ESXi on more Azure VM offerings successfully:
-# 'com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none' see weblinks above about installing ESXi over serial console
-# iovDisableIR=TRUE disables interrupt remapping as PCI devices may stop responding when using interrupt remapping. See https://kb.vmware.com/s/article/1030265
-# ignoreHeadless=TRUE is for passing correctly the network adapter in a nested virtualization environment.
-# See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
-# noIOMMU see https://communities.vmware.com/thread/515358
+# replace line "APPEND -c boot.cfg" with "APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1" in syslinux.cfg
+sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+#
+# Findings of virtualization extension compatibility setting to install ESXi on more hardware offerings
+# replace line 'kernelopt=' with like 'kernelopt=compatibility settings' in boot.cfg
+#    serial console and power savings related settings:
+#       'com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 tty1Port=com1 gdbPort=none logPort=com1' must be added for installing ESXi over serial console
+#       'ignoreHeadless=TRUE' During system boot up, if ESXi finds No VGA Present or Headless flag set in ACPI FADT table and if there is no user specified change in any of the serial services, 
+#                          the DCUI service will display on a serial port. See https://communities.vmware.com/thread/600995
+#                          related settings: 'ACPI=FALSE powerManagement=FALSE'
+#    'runweasel text nofb' to get DCUI window in text mode
+#    'preferVmklinux=TRUE' is to change the behaviour during boot process, first to load Linux drivers instead of Native drivers.
+#       This is the case for driver MEL-mlnx-en-1.9.9.4-1OEM-550.0.0.1331820-offline_bundle-2765235.zip.
+#       See \vib20\net-mlx4-core\Mellanox_bootbank_net-mlx4-core_1.9.9.4-1OEM.550.0.0.1331820.vib\descriptor.xml: It contains 'etc/vmware/driver.map.d/mlx4_core.map'.
+#       In reference to http://www.justait.net/2014/08/vsphere-native-drivers-22.html /etc/vmware/driver.map.d is for Linux driver.
+#    bootbank related settings:
+#       'installerDiskDumpSlotSize=2560 no-auto-partition devListStabilityCount=10' is to avoid that bootbank/scratch is not get mounted, see https://kb.vmware.com/s/article/2149444
+#    IOV related settings:
+#       'iovDisableIR=TRUE' disables interrupt remapping as PCI devices may stop responding when using interrupt remapping. See https://kb.vmware.com/s/article/1030265
+#           See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
+#    'noIOMMU' see https://communities.vmware.com/thread/515358
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
-sed 's/kernelopt=/kernelopt=iovDisableIR=TRUE ignoreHeadless=TRUE noIOMMU noipmiEnabled ACPI=FALSE powerManagement=FALSE text nofb com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 gdbPort=none logPort=none /' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+sed 's/kernelopt=cdromBoot runweasel/kernelopt=com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 tty1Port=com1 gdbPort=none logPort=com1 ignoreHeadless=TRUE ACPI=FALSE powerManagement=FALSE preferVmklinux=TRUE installerDiskDumpSlotSize=2560 no-auto-partition devListStabilityCount=10 iovDisableIR=TRUE noIOMMU runweasel text nofb /' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 # same setting for EFI
 cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg
