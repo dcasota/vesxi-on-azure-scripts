@@ -195,8 +195,8 @@ mv $VHDMOUNT/isolinux.cfg $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 sed 's/DEFAULT menu.c32/&\nserial 0 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
-# replace line "APPEND -c boot.cfg" with "APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1" in syslinux.cfg
-sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2Port=com1/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+# replace line "APPEND -c boot.cfg" in syslinux.cfg
+sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text tty2Port=com1 tty1Port=com1 gdbPort=none logPort=com1/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 #
 # Findings of virtualization extension compatibility setting to install ESXi on more hardware offerings
 # replace line 'kernelopt=' with like 'kernelopt=compatibility settings' in boot.cfg
@@ -207,9 +207,10 @@ sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text gdbPort=none logPort=none tty2
 #                          related settings: 'ACPI=FALSE powerManagement=FALSE'
 #    'runweasel text nofb' to get DCUI window in text mode
 #    'preferVmklinux=TRUE' is to change the behaviour during boot process, first to load Linux drivers instead of Native drivers.
-#       This is the case for driver MEL-mlnx-en-1.9.9.4-1OEM-550.0.0.1331820-offline_bundle-2765235.zip.
-#       See \vib20\net-mlx4-core\Mellanox_bootbank_net-mlx4-core_1.9.9.4-1OEM.550.0.0.1331820.vib\descriptor.xml: It contains 'etc/vmware/driver.map.d/mlx4_core.map'.
-#       In reference to http://www.justait.net/2014/08/vsphere-native-drivers-22.html /etc/vmware/driver.map.d is for Linux driver.
+#       As example, this is the case for driver MEL-mlnx-en-1.9.9.4-1OEM-550.0.0.1331820-offline_bundle-2765235.zip.
+#       See zip content \vib20\net-mlx4-core\Mellanox_bootbank_net-mlx4-core_1.9.9.4-1OEM.550.0.0.1331820.vib\descriptor.xml: It contains 'etc/vmware/driver.map.d/mlx4_core.map'.
+#       See http://www.justait.net/2014/08/vsphere-native-drivers-22.html, https://www.virtuallyghetto.com/2013/11/esxi-55-introduces-new-native-device.html
+#       Be aware, the mklinux driver stack is deprecated https://blogs.vmware.com/vsphere/2019/04/what-is-the-impact-of-the-vmklinux-driver-stack-deprecation.html
 #    bootbank related settings:
 #       'installerDiskDumpSlotSize=2560 no-auto-partition devListStabilityCount=10' is to avoid that bootbank/scratch is not get mounted, see https://kb.vmware.com/s/article/2149444
 #    IOV related settings:
