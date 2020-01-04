@@ -151,6 +151,7 @@ rm ./mtools-4.0.23.tar.gz
 # Step #4.4: install syslinux bootloader
 # --------------------------------------
 # ESXi uses Syslinux 3.86. See https://pubs.vmware.com/vsphere-50/index.jsp?topic=%2Fcom.vmware.vsphere.upgrade.doc_50%2FGUID-33C3E7D5-20D0-4F84-B2E3-5CD33D32EAA8.html
+# See https://www.virtuallyghetto.com/2019/07/automated-esxi-installation-to-usb-using-kickstart.html#comment-59753 "It’s best to select MBR instead of GPT. I found when using GPT that it failed to find KS.CFG."
 cd /root
 curl -O -J -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/3.xx/syslinux-3.86.tar.xz
 tar xf syslinux-3.86.tar.xz
@@ -177,6 +178,11 @@ mkdir $ESXICD
 # Copy ISO data
 mount -o loop ./$ISOFILENAME $ESXICD
 cp -r $ESXICD/* $VHDMOUNT
+
+# copy these two syslinux files as they are necessary for boot.cfg
+cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
+cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
+
 # Cleanup
 umount $ESXICD
 rm -r $ESXICD
@@ -184,51 +190,53 @@ rm ./$ISOFILENAME
 
 # Step #4.6: Enable serial console redirection and add virtualization extension compatibility setting
 #----------------------------------------------------------------------------------------------------
-#  copy these two files as they are necessary for boot.cfg
-cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
-cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
 # On Azure install ESXi via serial port, see weblinks about installing ESXi over serial console
-# http://www.vmwareadmins.com/installing-esxi-serial-console-headless-video-card/ and
-# https://pcengines.ch/ESXi_6.5.0_installation.txt and
-# https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.esxi.install.doc/GUID-B67A3552-CECA-4BF7-9487-4F36507CD99E.html
-# Add line "serial 0 115200" after "DEFAULT menu.c32" in syslinux.cfg
+#    http://www.vmwareadmins.com/installing-esxi-serial-console-headless-video-card/ and
+#    https://pcengines.ch/ESXi_6.5.0_installation.txt and
+#    https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.esxi.install.doc/GUID-B67A3552-CECA-4BF7-9487-4F36507CD99E.html
+#    https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.esxi.install.doc/GUID-7651C4A2-C358-40C2-8990-D82BDB8127E0.html
+
+# Specify serial ports by adding line 'serial 0 115200' and 'serial 1 115200' after 'DEFAULT menu.c32' in syslinux.cfg
+#    Serial 0 = /dev/ttyS0 = com1
+#    Serial 1 = /dev/ttyS1 = com2
 mv $VHDMOUNT/isolinux.cfg $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
-sed 's/DEFAULT menu.c32/&\nserial 0 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+sed 's/DEFAULT menu.c32/&\nserial 0 115200&\nserial 1 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
-# replace line "APPEND -c boot.cfg" in syslinux.cfg
-sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg text tty2Port=com1 tty1Port=com1 gdbPort=none logPort=com1/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
-#
-# Findings of virtualization extension compatibility setting to install ESXi on more hardware offerings
-# replace line 'kernelopt=' with like 'kernelopt=compatibility settings' in boot.cfg
-#    serial console and power savings related settings:
-#       'com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 tty1Port=com1 gdbPort=none logPort=com1' must be added for installing ESXi over serial console
-#       'ignoreHeadless=TRUE' During system boot up, if ESXi finds No VGA Present or Headless flag set in ACPI FADT table and if there is no user specified change in any of the serial services, 
-#                          the DCUI service will display on a serial port. See https://communities.vmware.com/thread/600995
-#                          related settings: 'ACPI=FALSE powerManagement=FALSE'
-#    'runweasel text nofb' to get DCUI window in text mode
+# Redirect console to serial port com1
+sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+
+# Findings of boot.cfg kernelopt compatibility setting to install ESXi on more hardware offerings
+#    Use 'tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none' to redirect the Direct Console to com1
+#       If necessary to enforce serial port settings, use 'com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none'
 #    'preferVmklinux=TRUE' is to change the behaviour during boot process, first to load Linux drivers instead of Native drivers.
 #       As example, this is the case for driver MEL-mlnx-en-1.9.9.4-1OEM-550.0.0.1331820-offline_bundle-2765235.zip.
 #       See zip content \vib20\net-mlx4-core\Mellanox_bootbank_net-mlx4-core_1.9.9.4-1OEM.550.0.0.1331820.vib\descriptor.xml: It contains 'etc/vmware/driver.map.d/mlx4_core.map'.
 #       See http://www.justait.net/2014/08/vsphere-native-drivers-22.html, https://www.virtuallyghetto.com/2013/11/esxi-55-introduces-new-native-device.html
 #       Be aware, the mklinux driver stack is deprecated https://blogs.vmware.com/vsphere/2019/04/what-is-the-impact-of-the-vmklinux-driver-stack-deprecation.html
-#    bootbank related settings:
-#       'installerDiskDumpSlotSize=2560 no-auto-partition devListStabilityCount=10' is to avoid that bootbank/scratch is not get mounted, see https://kb.vmware.com/s/article/2149444
-#    IOV related settings:
-#       'iovDisableIR=TRUE' disables interrupt remapping as PCI devices may stop responding when using interrupt remapping. See https://kb.vmware.com/s/article/1030265
-#           See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
+#    'ignoreHeadless=TRUE' During system boot up, if ESXi finds No VGA Present or Headless flag set in ACPI FADT table and if there is no user specified change in any of the serial services, 
+#       the DCUI service will display on a serial port. See https://communities.vmware.com/thread/600995
+#       Related settings: 'ACPI=FALSE powerManagement=FALSE'
+#    'runweasel text nofb' to get DCUI window in text mode
+#    'installerDiskDumpSlotSize=2560 no-auto-partition devListStabilityCount=10' is to avoid that bootbank/scratch is not get mounted, see https://kb.vmware.com/s/article/2149444
+#    'iovDisableIR=TRUE' disables interrupt remapping as PCI devices may stop responding when using interrupt remapping. See https://kb.vmware.com/s/article/1030265
+#       See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
 #    'noIOMMU' see https://communities.vmware.com/thread/515358
+# Apply kernelopt compatibility setting
+cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.1
+sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel preferVmklinux=TRUE/' $VHDMOUNT/boot.cfg.1 > $VHDMOUNT/boot.cfg
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
-sed 's/kernelopt=cdromBoot runweasel/kernelopt=com1_baud=115200 com1_Port=0x3f8 tty2Port=com1 tty1Port=com1 gdbPort=none logPort=com1 ignoreHeadless=TRUE ACPI=FALSE powerManagement=FALSE preferVmklinux=TRUE installerDiskDumpSlotSize=2560 no-auto-partition devListStabilityCount=10 iovDisableIR=TRUE noIOMMU runweasel text nofb /' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+
 # same setting for EFI
 cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg
+
+# Step #4.7: power down the VM
+#-----------------------------
 #cleanup
 cd /root
 umount $VHDMOUNT
 rm -r $VHDMOUNT
-# Step #4.7: power down the VM
-#-----------------------------
 systemctl disable configurebootdisk.service
 rm /lib/systemd/system/multi-user.target.wants/configurebootdisk.service
 unlink /lib/systemd/system/configurebootdisk.service
