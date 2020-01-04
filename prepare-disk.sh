@@ -151,7 +151,7 @@ rm ./mtools-4.0.23.tar.gz
 # Step #4.4: install syslinux bootloader
 # --------------------------------------
 # ESXi uses Syslinux 3.86. See https://pubs.vmware.com/vsphere-50/index.jsp?topic=%2Fcom.vmware.vsphere.upgrade.doc_50%2FGUID-33C3E7D5-20D0-4F84-B2E3-5CD33D32EAA8.html
-# See https://www.virtuallyghetto.com/2019/07/automated-esxi-installation-to-usb-using-kickstart.html#comment-59753 "It’s best to select MBR instead of GPT. I found when using GPT that it failed to find KS.CFG."
+# See https://www.virtuallyghetto.com/2019/07/automated-esxi-installation-to-usb-using-kickstart.html#comment-59753 "It's best to select MBR instead of GPT. I found when using GPT that it failed to find KS.CFG."
 cd /root
 curl -O -J -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/3.xx/syslinux-3.86.tar.xz
 tar xf syslinux-3.86.tar.xz

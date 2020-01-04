@@ -196,12 +196,13 @@ function create-AzVM-vESXi_usingPhotonOS{
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$ESXiBootdiskSizeGB = '16', # minimum is 16gb
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$Computername = $VMName ,		
+        [String]$Computername = $VMName ,
+        
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]$VMLocalcred = (Get-credential -message 'Enter a username and password for the VM. Password must be 7-12 characters. Username must be all in small letters.'),	        	
    		
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$VMLocalAdminUser="adminuser", #all small letters
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$VMLocalAdminPassword = "PhotonOs123!" , #pwd must be 7-12 characters
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$BashfileName="prepare-disk.sh"		
     )
@@ -349,21 +350,24 @@ if (([string]::IsNullOrEmpty($nic2)))
 $locationstack=get-location
 set-location -Path ${PSScriptRoot}
 
+$VMLocalAdminUser=$VMcred.GetNetworkCredential().username
+$VMLocalAdminPassword=$VMcred.GetNetworkCredential().password
+
 # az vm create with custom-data
 try {
-	az vm create --resource-group $ResourceGroupName --location $LocationName --name $vmName `
-	--size $VMSize `
-	--admin-username $VMLocalAdminUser --admin-password $VMLocalAdminPassword `
-	--storage-account $StorageAccountName `
+	az vm create --resource-group ${ResourceGroupName} --location ${LocationName} --name ${vmName} `
+	--size ${VMSize} `
+	--admin-username ${VMLocalAdminUser} --admin-password ${VMLocalAdminPassword} `
+	--storage-account ${StorageAccountName} `
 	--storage-container-name ${ContainerName} `
 	--os-type linux `
 	--use-unmanaged-disk `
-	--os-disk-size-gb $diskSizeGB `
-	--image $urlOfUploadedVhd `
-	--attach-data-disks $urlOfUploadedVhd `
-	--computer-name $computerName `
-	--nics $NICName1 $NicName2 `
-	--custom-data $Bashfilename `
+	--os-disk-size-gb ${diskSizeGB} `
+	--image ${urlOfUploadedVhd} `
+	--attach-data-disks ${urlOfUploadedVhd} `
+	--computer-name ${computerName} `
+	--nics ${NICName1} ${NicName2} `
+	--custom-data ${Bashfilename} `
 	--generate-ssh-keys `
 	--boot-diagnostics-storage "https://${StorageAccountName}.blob.core.windows.net"
 } catch {}
