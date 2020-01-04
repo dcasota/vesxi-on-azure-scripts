@@ -1,6 +1,7 @@
 #!/bin/sh
 #
 # Prepare a vhd data disk device as bootable VMware ESXi Hypervisor
+# UNFINISHED! WORK IN PROGRESS!
 #
 # The bash script configures an attached data disk as ESXi bootable medium. It must run on VMware Photon OS. And you have to enter your location of the ESXi ISO medium. See comments inside the script.
 # The script processes following steps:
@@ -15,8 +16,11 @@
 #    4.3. format the data disk as FAT32. Hence, some packages and mtools-4.0.23.tar.gz used are installed temporarily.
 #    4.4. install Syslinux bootlader 3.86 for ESXi on the data disk. syslinux-3.86.tar.xz is installed temporarily.
 #    4.5. mount and copy ESXi content to the data disk
-#    4.6. In the context of Azure, enable serial console redirection and add virtualization extension compatibility setting.
-#         This is an important step to make run serial console for the setup phase of ESXi VM on Azure, as well as providing the compatibility setting like iovDisableIR=TRUE, ignoreHeadless=TRUE or noIOMMU to be passed for grub.
+#    4.6. In the context of Azure, enabling serial console redirection becomes important. The two files syslinux.cfg and boot.cfg are modified to make run serial console for the setup phase of ESXi VM on Azure.
+#         In addition, more compatibility settings to be passed in boot.cfg are necessary as the ESXi setup starts but fails with No Network Adapter.
+#         The integration of the detected network adapter Mellanox ConnectX-3 virtual function is unfinished.
+#         Mellanox ConnectX-3 [15b3:1004] driver support for VMware ESXi by VMware
+#         See https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc
 #    4.7. power down the VM
 # 
 #
@@ -75,7 +79,7 @@ cat > $BASHFILE <<'EOF'
 cd /root
 
 # INSERT YOUR ISOFILENAME HERE
-ISOFILENAME="ESXi-6.7.0-20191204001-standard-customized.iso"
+ISOFILENAME="ESXi-6.5.0-20191204001-standard-customized.iso"
 
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
@@ -90,8 +94,6 @@ tdnf install -y tar wget curl sed syslinux
 # pwsh -c "install-module VMware.PowerCLI -force"
 # TODO VMware.Imagebuilder compatibility
 # TODO download and inject Mellanox offline bundle
-# https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver
-# For ESXi 6.0 See https://my.vmware.com/group/vmware/details?downloadGroup=DT-ESX60-MELLANOX-NMLX4_EN-31555&productId=491
 # wget http://vibsdepot.v-front.de/tools/ESXi-Customizer-PS-v2.6.0.ps1
 # mkdir ./driver-offline-bundle
 # ./ESXi-Customizer-PS-v2.6.0.ps1 -ozip -v65
@@ -104,17 +106,16 @@ tdnf install -y tar wget curl sed syslinux
 
 # Option #3: Download from a Google Drive Download Link
 # Example: 
-# raw google drive web url:  https://drive.google.com/open?id=1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l
-# GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
-#
-GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
+#   raw google drive web url:  https://drive.google.com/open?id=1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l
+#   resulting GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
+GOOGLEDRIVEFILEID="1AgNICZSMUI4RB-mTxhjRSS2Xm6YOwboj"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
 
 # Step #4.2: partition the data disk attached
 # -------------------------------------------
-# Press [d] to delete any existing primary partition.
+# Press [d] to delete any existing primary partition on data disk.
 echo -e "d\nw" | fdisk $DEVICE
 # create partition
 # Press [o] to create a new empty DOS partition table.

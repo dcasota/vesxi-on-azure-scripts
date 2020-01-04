@@ -131,7 +131,7 @@
 #                  See https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver (click on 'View the list of the latest VMware driver version for Mellanox products')
 #
 #                  Azure VM offering specifically with ConnectX functionality by Microsoft Azure
-#                  (unknown)
+#                  See https://github.com/MicrosoftDocs/azure-docs/issues/45303 "There is no possibility for now for checking/selecting the Mellanox driver for specific VM size before deploying."
 #
 
 
