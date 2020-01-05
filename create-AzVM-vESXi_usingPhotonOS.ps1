@@ -350,8 +350,8 @@ if (([string]::IsNullOrEmpty($nic2)))
 $locationstack=get-location
 set-location -Path ${PSScriptRoot}
 
-$VMLocalAdminUser=$VMcred.GetNetworkCredential().username
-$VMLocalAdminPassword=$VMcred.GetNetworkCredential().password
+$VMLocalAdminUser=$VMLocalcred.GetNetworkCredential().username
+$VMLocalAdminPassword=$VMLocalcred.GetNetworkCredential().password
 
 # az vm create with custom-data
 try {

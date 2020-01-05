@@ -108,7 +108,7 @@ tdnf install -y tar wget curl sed syslinux
 # Example: 
 #   raw google drive web url:  https://drive.google.com/open?id=1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l
 #   resulting GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
-GOOGLEDRIVEFILEID="1AgNICZSMUI4RB-mTxhjRSS2Xm6YOwboj"
+GOOGLEDRIVEFILEID="1i9Yz2U9oyYzqSXcX9hr964ohD0UPkcSS"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -205,6 +205,9 @@ sed 's/DEFAULT menu.c32/&\nserial 0 115200&\nserial 1 115200/' $VHDMOUNT/syslinu
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 # Redirect console to serial port com1
 sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+# Enable text UI (add it to APPEND in syslinux.cfg)
+cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
+sed 's/boot.cfg/boot.cfg text/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 
 # Findings of boot.cfg kernelopt compatibility setting to install ESXi on more hardware offerings
 #    Use 'tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none' to redirect the Direct Console to com1
@@ -224,7 +227,7 @@ sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg tty1Port=com1 tty2Port=com1 logPort
 #    'noIOMMU' see https://communities.vmware.com/thread/515358
 # Apply kernelopt compatibility setting
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.1
-sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel preferVmklinux=TRUE/' $VHDMOUNT/boot.cfg.1 > $VHDMOUNT/boot.cfg
+sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel/' $VHDMOUNT/boot.cfg.1 > $VHDMOUNT/boot.cfg
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
 
 # same setting for EFI
