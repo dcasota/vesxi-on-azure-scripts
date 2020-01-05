@@ -225,10 +225,13 @@ sed 's/boot.cfg/boot.cfg text/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cf
 #    'iovDisableIR=TRUE' disables interrupt remapping as PCI devices may stop responding when using interrupt remapping. See https://kb.vmware.com/s/article/1030265
 #       See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
 #    'noIOMMU' see https://communities.vmware.com/thread/515358
-# Apply kernelopt compatibility setting
-cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.1
-sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel/' $VHDMOUNT/boot.cfg.1 > $VHDMOUNT/boot.cfg
+#
+#    remove cdromBoot and apply DCUI window in text mode
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
+sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel text nofb/' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+#    apply redirect the Direct Console to com1 setting
+cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
+sed 's/kernelopt=runweasel/kernelopt=runweasel com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none /' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
 # same setting for EFI
 cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0

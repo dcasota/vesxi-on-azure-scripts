@@ -1,9 +1,9 @@
 ﻿#
-# Create a VMware ESXi on a Microsoft Azure offering
+# Create a VMware ESXi Virtual Machine on a Microsoft Azure offering
 #
 # The script creates a VM, temporary with VMware Photon OS. An attached data disk is used for the installation bits of VMware ESXi. The prepared data disk then is promoted as OS disk.
 #
-# USE THE SCRIPT IT AT YOUR OWN RISK! VMware ESXi on Azure is NOT OFFICIALLY SUPPORTED. If you run into issues with a nested lab, give up or try to fix it on your own support.
+# USE THE SCRIPT IT AT YOUR OWN RISK! If you run into issues, give up or try to fix it on your own support. Nested VMware ESXi on Azure is NOT OFFICIALLY SUPPORTED.
 # 
 #
 # History
@@ -106,10 +106,10 @@
 # - ESXi starts with 'no network adapters'
 #   workaround: none
 #               Findings:
-#                  The Azure Standard_E4s_v3 offering includes the accelerated networking feature, and exposes ConnectX-3 as nic adapter type.
+#                  The Azure Standard_E4s_v3 offering includes the accelerated networking feature, and exposes ConnectX-3 as nic adapter type. Its integration to ESXi didn't work yet.
 #
-#                  Research/Findings:
-#                     lspci output on Photon OS (tdnf install pciutils):
+#                  Research/Findings on Photon OS:
+#                     lspci output (tdnf install pciutils):
 #                     lspci | grep Mellanox
 #                        82d1:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
 #                        Subsystem: Mellanox Technologies Device [15b3:61b0]
@@ -123,15 +123,26 @@
 #                        [    4.618174] systemd[1]: Detected virtualization microsoft.
 #                        [    8.898099] mlx4_core 9ba0:00:02.0: Detected virtual function - running in slave mode
 #                        [    8.928888] mlx4_core 85e5:00:02.0: Detected virtual function - running in slave mode
-# 
+#
+#                  Research/Findings on ESXi Shell:
+#                     lspci output: The Mellanox device has not been detected
+#                        0000:00:00.0 Host bridge: Intel Corporation 440BX/ZX/DX - 82443BX/ZX/DX Host bridge (AGP disabled)
+#                        0000:00:07.0 ISA bridge: Intel Corporation 82371AB/EB/MB PIIX4 ISA
+#                        0000:00:07.1 IDE interface: Intel Corporation PIIX4 for 430TX/440BX/MX IDE Controller [vmhba0]
+#                        0000:00:07.3 Bridge: Intel Corporation 82371AB/EB/MB PIIX4 ACPI
+#                        0000:00:08.0 VGA compatible controller: Microsoft Corporation Hyper-V virtual VGA
+#                     localcli device driver list shows up vmhba0 only. There is no vmnic.
+#                     vmkload_mod shows up the drivers loaded, e.g. mlx4_en.
+#
 #                  Mellanox ConnectX-3 [15b3:1004] driver support for VMware ESXi by VMware
-#                  See https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc
+#                     See https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc
 #
 #                  VMware Driver support for Mellanox ConnectX-3 by Mellanox 
-#                  See https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver (click on 'View the list of the latest VMware driver version for Mellanox products')
+#                     See https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver (click on 'View the list of the latest VMware driver version for Mellanox products')
 #
 #                  Azure VM offering specifically with ConnectX functionality by Microsoft Azure
-#                  See https://github.com/MicrosoftDocs/azure-docs/issues/45303 "There is no possibility for now for checking/selecting the Mellanox driver for specific VM size before deploying."
+#                     See https://github.com/MicrosoftDocs/azure-docs/issues/45303 "There is no possibility for now for checking/selecting the Mellanox driver for specific VM size before deploying."
+#
 #
 
 
@@ -146,7 +157,7 @@ function create-AzVM-vESXi_usingPhotonOS{
         [Parameter(Mandatory = $false)]
         [ValidateNotNull()]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$cred = (Get-credential -message 'Enter a username and password.'),	
+        [System.Management.Automation.Credential()]$cred = (Get-credential -message 'Enter a username and password for the Azure login.'),	
 
         [Parameter(Mandatory = $false)]
         [ValidateSet('eastus','westus','westeurope')]
@@ -201,7 +212,7 @@ function create-AzVM-vESXi_usingPhotonOS{
         [Parameter(Mandatory = $false)]
         [ValidateNotNull()]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]$VMLocalcred = (Get-credential -message 'Enter a username and password for the VM. Password must be 7-12 characters. Username must be all in small letters.'),	        	
+        [System.Management.Automation.Credential()]$VMLocalcred = (Get-credential -message 'Enter username and password for the VM user account to be created locally. Password must be 7-12 characters. Username must be all in small letters.'),	        	
    		
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$BashfileName="prepare-disk.sh"		
@@ -392,6 +403,10 @@ for ($i=0;$i -lt $Timeout; $i++) {
 		    # Convert to managed disks https://docs.microsoft.com/en-us/azure/virtual-machines/windows/convert-unmanaged-to-managed-disks
 		    ConvertTo-AzVMManagedDisk -ResourceGroupName $ResourceGroupName -VMName $vmName
 		    # Starts VM automatically
+			
+			# Do interactively login to Photon OS you may uncomment 'pause' and break the setup here.
+			#    Use the specified local VM user account credentials. To sudo to root run 'sudo passwd -u root', enter a new password with 'sudo passwd root', and root login with 'su -l root'.
+			# pause
 
 		    # Make sure the VM is stopped but not deallocated so you can detach/attach disk
 		    Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
