@@ -5,7 +5,7 @@
 This lab project contains scripts for provisioning VMware ESXi as Microsoft Azure VM.
  
 # Why are people running their stuff in a nested virtualization lab? 
-VMware ESXi, the cloud provider and onpremise datacenter type-1 hypervisor for many guest OS has been established for more than fifteen years. As a VMware enthusiast simply put I love plan, do and run datacenter infrastructure. On the same side, reliability, scalability, performance for compute resources is a main topic on Microsoft Azure and its Hyper-V type-1 hypervisor, too.
+VMware ESXi, the cloud provider- and onpremise datacenter type-1-hypervisor for many guest OS has been established for more than fifteen years. As a VMware enthusiast simply put I love plan, do and run datacenter infrastructure. On the same side, reliability, scalability, performance for compute resources is a main topic on Microsoft Azure and its Hyper-V type-1 hypervisor, too.
 
 If you want to go for more hypervisor software learning, and without the need to spec, order, rack, stack, cable, image and deploy hardware, nested hypervisor labs could be a useful addition, but, it is not officially supported. See
   - https://kb.vmware.com/s/article/2009916
