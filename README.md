@@ -2,9 +2,7 @@
 
 ![ESXi67](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXi67.png)
 
-This lab project contains scripts for provisioning VMware ESXi as Microsoft Azure VM. The repo contains several scripts.
-  - create-AzVM-vESXi_usingPhotonOS.ps1
-  - prepare-disk.sh  
+This lab project contains scripts for provisioning VMware ESXi as Microsoft Azure VM.
  
 # Why are people running their stuff in a nested virtualization lab? 
 VMware ESXi, the cloud provider and onpremise datacenter type-1 hypervisor for many guest OS has been established for more than fifteen years. As a VMware enthusiast simply put I love plan, do and run datacenter infrastructure. On the same side, reliability, scalability, performance for compute resources is a main topic on Microsoft Azure and its Hyper-V type-1 hypervisor, too.
@@ -23,7 +21,11 @@ This study work running an ESXi VM on top of Azure pursues the following goals:
 - code Microsoft Azure VM and VMware ESXi setup or kickstart scripts step by step. Be pragmatic with findings from user interface interactions or results.
 - document the findings. The mission of this cross-type-1-hypervisor nested lab is pushing the horizon view of my own to both worlds.
    
-    
+ The repo contains several scripts.
+  - ```create-AzVM-vESXi_usingPhotonOS.ps1```
+  - ```prepare-disk.sh```
+  - ```create-customizedESXi-iso.ps1```
+  
  # ```create-AzVM-vESXi_usingPhotonOS.ps1```
 The Azure powershell script creates a VMware ESXi VM on Microsoft Azure. The hardware used is a Standard_DS3_v2 offering.
 An ESXi VM offering on Azure must support:
@@ -85,13 +87,17 @@ The bash script configures an attached data disk as ESXi bootable medium. It mus
      4.7. power down the VM
   
 
-
-
 UNFINISHED! WORK IN PROGRESS!
 02.01.2020
 The ESXi setup starts but fails with No Network Adapter found. Some efforts are documented at
 - https://communities.vmware.com/thread/623892
 - https://communities.vmware.com/thread/623049
 - https://github.com/MicrosoftDocs/azure-docs/issues/45303
+
+
+ # ```create-customizedESXi-iso.ps1```
+The powershell script creates a customized ESXi ISO with Mellanox adapter driver.
+It downloads the ESXi image using the ESXi-Customizer from v-front.de, removes all builtin Mellanox drivers as for ESXi 6.0, 6.5 and 6.7 out-of-the-box it does not work yet for a target Azure hardware offering. The script is configured to process an ESXi 6.5 image, hence, it adds specific offline bundles (see https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc) and cim modules, and creates the iso.
+
 
 Suggestions and issues discussions about the homelab project are welcome.
