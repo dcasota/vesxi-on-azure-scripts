@@ -1,0 +1,322 @@
+Findings about Virtual Machine Hardware through ESXi Shell
+----------------------------------------------------------
+Other than on Photon OS, the very first ESXi setup phase started from the customized ISO with added Mellanox drivers, on Azure it doesn't show up the Mellanox nic adapters using 'lspci' or 'esxcfg-info'.
+
+
+# 1) UEFI / Legacy BIOS
+# ---------------------
+# check if booted from UEFI or legacy Bios
+[root@localhost:~] vsish -e get /hardware/firmwareType
+Firmware type: 0 -> Legacy BIOS
+[root@localhost:~]
+
+# For vsish commands see https://s3.amazonaws.com/virtuallyghetto-download/complete_vsish_config.html, https://s3.amazonaws.com/virtuallyghetto-download/complete_vsish_config_500ga.html
+
+# For TPM2.0 See example https://lenovopress.com/lp1234.pdf: "run the following command to confirm that Secure Boot is enabled."
+[root@localhost:~] /usr/lib/vmware/secureboot/bin/secureBoot.py -c
+Secure boot CANNOT be enabled: Failed to verify signatures of the following vib(s): [net-mst]. All tardisks validated. All acceptance levels validated
+[root@localhost:~] /usr/lib/vmware/secureboot/bin/secureBoot.py -s
+Disabled
+[root@localhost:~]
+
+# "Run the following command to check present status and version of the TPM chip."
+# "The output of 1 means the TPM chip is present in the system. The output of 2 means the version is TPM 2.0."
+[root@localhost:~] vsish -e get /hardware/tpm/present
+VSISHPath_Form():Extraneous 'tpm' in path.
+VSISHCmdGetInt():mal-formed path
+[root@localhost:~]
+[root@localhost:~] vsish -e get /hardware/tpm/version
+VSISHPath_Form():Extraneous 'tpm' in path.
+VSISHCmdGetInt():mal-formed path
+[root@localhost:~]
+
+# "Run the following command to check the status of trustedboot."
+[root@localhost:~] localcli hardware trustedboot get
+TrustedbootGet:
+   Drtm Enabled: false
+   Tpm Present: false
+[root@localhost:~]
+
+# Run the following commands to check TPM driver
+vmkload_mod -l |grep tpm
+zcat /var/log/boot.gz | grep -i -E "tpm"
+# "The TPM driver on ESXi may fail to load and report errors with error code 0x921 or 0x98e in vmkernel.log."
+# "This kind of issue is caused if another operating system has previously taken ownership of the TPM."
+# "By design, TPM driver on ESXi does not overwrite the ownership of the TPM on the server platform."
+
+
+# 2) Hardware information
+# -----------------------
+[root@localhost:~] vsish -e cat /hardware/bios/biosInfo
+BIOS Information (type 0) {
+   BIOS Vendor:American Megatrends Inc.
+   BIOS Version:090007
+   BIOS Release Date:06/02/2017
+   BIOS Major Release:255
+   BIOS Minor Release:255
+   Embedded Controller Firmware Major Release:255
+   Embedded Controller Firmware Minor Release:255
+}
+[root@localhost:~]
+
+[root@localhost:~] vsish -e cat /hardware/bios/dmiInfo
+System Information (type1) {
+   Product Name:Virtual Machine
+   Vendor Name:Microsoft Corporation
+   Serial Number:0000-0002-4584-6600-1476-7327-10
+   UUID:[0]: 0xcd
+   [1]: 0x39
+   [2]: 0x1e
+   [3]: 0x22
+   [4]: 0x65
+   [5]: 0x86
+   [6]: 0x26
+   [7]: 0x47
+   [8]: 0x88
+   [9]: 0x4e
+   [10]: 0xa0
+   [11]: 0xe0
+   [12]: 0x4b
+   [13]: 0x5b
+   [14]: 0x76
+   [15]: 0xdf
+}
+[root@localhost:~]
+
+[root@localhost:~] esxcfg-info |less -I
++Host :
+   \==+Hardware Info :
+      |----BIOS UUID................................................0xcd 0x39 0x1e 0x22 0x65 0x86 0x26 0x47 0x88 0x4e 0xa0 0xe0 0x4b 0x5b 0x76 0xdf
+      |----BIOS Vendor..............................................American Megatrends Inc.
+      |----BIOS Version.............................................090007
+      |----BIOS ReleaseDate.........................................2017-06-02T00:00:00
+      |----BIOS Asset Tag...........................................7783-7084-3265-9085-8269-3286-77
+      |----Product Name.............................................Virtual Machine
+      |----Vendor Name..............................................Microsoft Corporation
+      |----Serial Number............................................0000-0002-4584-6600-1476-7327-10
+      |----Enclosure Serial Number..................................8338-1030-6363-9615-8356-7111-29
+      |----Hardware Uptime..........................................915663830
+      |----Ipmi Supported...........................................false
+      |----BMC Version..............................................
+      \==+PCI Info :
+         \==+All Pci Devices :
+            \==+PCI Device :
+[...]
+
+
+[root@localhost:~] lspci
+0000:00:00.0 Host bridge: Intel Corporation 440BX/ZX/DX - 82443BX/ZX/DX Host bridge (AGP disabled)
+0000:00:07.0 ISA bridge: Intel Corporation 82371AB/EB/MB PIIX4 ISA
+0000:00:07.1 IDE interface: Intel Corporation PIIX4 for 430TX/440BX/MX IDE Controller [vmhba0]
+0000:00:07.3 Bridge: Intel Corporation 82371AB/EB/MB PIIX4 ACPI
+0000:00:08.0 VGA compatible controller: Microsoft Corporation Hyper-V virtual VGA
+[root@localhost:~]
+
+
+# 3) Get information about local hard drives
+# ------------------------------------------
+[root@localhost:~] localcli storage nmp device list
+
+t10.ATA_____Virtual_HD__________________________________________________:
+   Device Display Name: Local ATA Disk (t10.ATA_____Virtual_HD__________________________________________________)
+   Storage Array Type: VMW_SATP_LOCAL
+   Storage Array Type Device Config: SATP VMW_SATP_LOCAL does not support device configuration.
+   Path Selection Policy: VMW_PSP_FIXED
+   Path Selection Policy Device Config: {preferred=vmhba0:C0:T1:L0;current=vmhba0:C0:T1:L0}
+   Path Selection Policy Device Custom Config:
+   Working Paths: vmhba0:C0:T1:L0
+   Is USB: false
+
+[root@localhost:~]
+
+[root@localhost:~] localcli storage core device list
+
+t10.ATA_____Virtual_HD__________________________________________________:
+   Display Name: Local ATA Disk (t10.ATA_____Virtual_HD__________________________________________________)
+   Has Settable Display Name: true
+   Size: 65536
+   Device Type: Direct-Access
+   Multipath Plugin: NMP
+   Devfs Path: /vmfs/devices/disks/t10.ATA_____Virtual_HD__________________________________________________
+   Vendor: ATA
+   Model: Virtual HD
+   Revision: 1.1.
+   SCSI Level: 5
+   Is Pseudo: false
+   Status: on
+   Is RDM Capable: false
+   Is Local: true
+   Is Removable: false
+   Is SSD: false
+   Is VVOL PE: false
+   Is Offline: false
+   Is Perennially Reserved: false
+   Queue Full Sample Size: 0
+   Queue Full Threshold: 0
+   Thin Provisioning Status: unknown
+   Attached Filters:
+   VAAI Status: unsupported
+   Other UIDs: vml.01000000002020202020202020202020202020202020202020566972747561
+   Is Shared Clusterwide: false
+   Is Local SAS Device: false
+   Is SAS: false
+   Is USB: false
+   Is Boot USB Device: false
+   Is Boot Device: false
+   Device Max Queue Depth: 1
+   No of outstanding IOs with competing worlds: 1
+   Drive Type: unknown
+   RAID Level: unknown
+   Number of Physical Drives: unknown
+   Protection Enabled: false
+   PI Activated: false
+   PI Type: 0
+   PI Protection Mask: NO PROTECTION
+   Supported Guard Types: NO GUARD SUPPORT
+   DIX Enabled: false
+   DIX Guard Type: NO GUARD SUPPORT
+   Emulated DIX/DIF Enabled: false
+
+[root@localhost:~]
+
+# if a cdrom would be present the mount command would be
+# vmkload_mod iso9660
+# /sbin/vsish -e set /vmkModules/iso9660/mount mpx.vmhba32:C0:T0:L0
+
+[root@localhost:~] localcli device driver list
+Device  Driver  Status  KB Article
+----------------------------------
+vmhba0  vmkata  normal
+
+
+# 4) Mellanox related findings
+# ----------------------------
+# Reference http://www.mellanox.com/related-docs/prod_software/Mellanox_Native_ESX_Driver_for_VMware_vSphere_6.5_User_Manual_v3.16.11.10.pdf
+
+[root@localhost:~] vmkload_mod -s mlx4_en
+vmkload_mod module information
+ input file: /usr/lib/vmware/vmkmod/mlx4_en
+ Version: Version 1.9.9.4 (Sep-02-2014), Build: 1331820, Interface: 9.2 Built on: Sep  2 2014
+ License: Dual BSD/GPL
+ Required name-spaces:
+  com.mellanox.mlx4_core#9.2.2.0
+  com.vmware.driverAPI#9.2.2.0
+  com.vmware.vmkapi#v2_2_0_0
+ Parameters:
+  skb_mpool_max: int
+    Maximum attainable private socket buffer memory pool size for the driver.
+  skb_mpool_initial: int
+    Driver's minimum private socket buffer memory pool size.
+  heap_max: int
+    Maximum attainable heap size for the driver.
+  heap_initial: int
+    Initial heap size allocated for the driver.
+  inline_thold: int
+    threshold for using inline data
+  netq_num_rings_per_rss: uint
+    Number of rings per RSS netq
+    valid values: [0, 2, 4]
+    default: 0
+  netq: uint
+    Enable netqueue or disabled (0), default: 1
+  use_rx_frags: uint
+    Enable RX frags or disabled (0), default: 0
+  pfcrx: uint
+    Priority based Flow Control policy on RX[7:0]. Per priority bit mask
+  pfctx: uint
+    Priority based Flow Control policy on TX[7:0]. Per priority bit mask
+  udp_rss: uint
+    Enable RSS for incomming UDP traffic or disabled (0)
+[root@localhost:~] 
+
+[root@localhost:~] /opt/mellanox/bin/openibd.sh restart
+/etc/init.d/sfcbd-watchdog stop
+sfcbd-init: Getting Exclusive access, please wait...
+sfcbd-init: Exclusive access granted.
+sfcbd-init: Request to stop sfcbd-watchdog, pid 87045
+esxcfg-module -u ib_srp
+Module ib_srp unloaded successfully
+esxcfg-module -u ib_ipoib
+Module ib_ipoib unloaded successfully
+esxcfg-module -u mlx4_ib
+Module mlx4_ib unloaded successfully
+esxcfg-module -u ib_cm
+Module ib_cm unloaded successfully
+esxcfg-module -u ib_umad
+Module ib_umad unloaded successfully
+esxcfg-module -u ib_sa
+Module ib_sa unloaded successfully
+esxcfg-module -u ib_mad
+Module ib_mad unloaded successfully
+esxcfg-module -u ib_core
+Module ib_core unloaded successfully
+esxcfg-module -u mlx4_core
+Module mlx4_core unloaded successfully
+esxcli system module load -m mlx4_core
+IO error: [Errno 111] Connection refused
+esxcli system module load -m ib_core
+IO error: [Errno 111] Connection refused
+esxcli system module load -m ib_mad
+IO error: [Errno 111] Connection refused
+esxcli system module load -m ib_sa
+IO error: [Errno 111] Connection refused
+esxcli system module load -m ib_umad
+IO error: [Errno 111] Connection refused
+esxcli system module load -m ib_cm
+IO error: [Errno 111] Connection refused
+esxcli system module load -m mlx4_ib
+IO error: [Errno 111] Connection refused
+esxcli system module load -m ib_ipoib
+IO error: [Errno 111] Connection refused
+esxcli system module load -m ib_srp
+IO error: [Errno 111] Connection refused
+/etc/init.d/sfcbd-watchdog start
+sfcbd-init: Getting Exclusive access, please wait...
+sfcbd-init: Exclusive access granted.
+sfcbd-init: Request to start sfcbd-watchdog, pid 87269
+sfcbd-init: /etc/sfcb/sfcb.cfg set to default factory settings.
+sfcbd-config[87282]: updated /etc/sfcb/sfcb.cfg sfcbd enabled
+sfcbd-init: snmp has not been enabled.
+sfcbd-init: starting sfcbd
+/etc/init.d/sfcbd-watchdog: line 139: can't create /var/tmp/sfcb_cache.txt: nonexistent directory
+/etc/init.d/sfcbd-watchdog: line 140: can't create /var/tmp/sfcb_cache.txt: nonexistent directory
+/etc/init.d/mlnx-ofed-config start
+[root@localhost:~]
+
+
+[root@localhost:~] /etc/init.d/sfcbd-watchdog stop
+sfcbd-init: Getting Exclusive access, please wait...
+sfcbd-init: Exclusive access granted.
+sfcbd-init: Request to stop sfcbd-watchdog, pid 90622
+[root@localhost:~] esxcfg-module nmlx4_core
+Module nmlx4_core loaded successfully
+[root@localhost:~] esxcfg-module nmlx4_rdma
+Module nmlx4_rdma loaded successfully
+[root@localhost:~] esxcfg-module nmlx4_en
+Module nmlx4_en loaded successfully
+[root@localhost:~] /etc/init.d/sfcbd-watchdog start
+sfcbd-init: Getting Exclusive access, please wait...
+sfcbd-init: Exclusive access granted.
+sfcbd-init: Request to start sfcbd-watchdog, pid 91841
+sfcbd-config[91851]: Configuration not changed, already enabled
+sfcbd-init: snmp has not been enabled.
+sfcbd-init: starting sfcbd
+/etc/init.d/sfcbd-watchdog: line 139: can't create /var/tmp/sfcb_cache.txt: nonexistent directory
+/etc/init.d/sfcbd-watchdog: line 140: can't create /var/tmp/sfcb_cache.txt: nonexistent directory
+[root@localhost:~]
+
+[root@localhost:~] dmesg | grep mellanox
+2001-01-01T00:01:32.139Z cpu3:66914)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
+2001-01-01T00:01:32.359Z cpu3:66914)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
+2001-01-01T00:01:32.371Z cpu3:66914)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
+2001-01-01T00:01:32.388Z cpu3:66914)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
+2001-01-01T00:01:32.500Z cpu2:66919)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
+2001-01-01T00:01:32.519Z cpu2:66919)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
+2001-01-01T00:01:32.532Z cpu2:66919)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
+2001-01-01T00:01:32.550Z cpu1:66919)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
+[root@localhost:~]
+
+# 5) Copying files
+# ----------------
+# (does not work)
+# mcopy -i /dev/disks/vmhba0:C0:T0:L0:1 '::/isolinux.cfg' "/tmp/isolinux.cfg" -n
