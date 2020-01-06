@@ -33,7 +33,6 @@ add-esxsoftwaredepot $ESXiZipFile
 new-esximageprofile -CloneProfile $ESXiZipFileName -Name $ImageProfileName -Vendor $VendorName
 set-esximageprofile -imageprofile $ImageProfileName -AcceptanceLevel PartnerSupported
 # get-esximageprofile -name $ImageProfileName | select-object -expandproperty viblist | sort-object
-Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-e1000e
 Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-en
 Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-core
 Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core
