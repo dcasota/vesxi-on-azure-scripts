@@ -143,8 +143,9 @@
 #                  Azure VM offering specifically with ConnectX functionality by Microsoft Azure
 #                     See https://github.com/MicrosoftDocs/azure-docs/issues/45303 "There is no possibility for now for checking/selecting the Mellanox driver for specific VM size before deploying."
 #
+#                  Mellanox Adapter CIM Provider for VMware ESX/ESXi
+#                     See https://www.mellanox.com/page/products_dyn?product_family=131&mtag=common_information_model
 #
-
 
 function create-AzVM-vESXi_usingPhotonOS{
    [cmdletbinding()]

@@ -79,7 +79,7 @@ cat > $BASHFILE <<'EOF'
 cd /root
 
 # INSERT YOUR ISOFILENAME HERE
-ISOFILENAME="ESXi-6.5.0-20191204001-standard-customized.iso"
+ISOFILENAME="ESXi65-customized.iso"
 
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
@@ -108,7 +108,7 @@ tdnf install -y tar wget curl sed syslinux
 # Example: 
 #   raw google drive web url:  https://drive.google.com/open?id=1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l
 #   resulting GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
-GOOGLEDRIVEFILEID="1i9Yz2U9oyYzqSXcX9hr964ohD0UPkcSS"
+GOOGLEDRIVEFILEID="1OZuszhq6ZxLqTAZ2nxqFc8JdPoN57ULE"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -210,12 +210,13 @@ cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 sed 's/boot.cfg/boot.cfg text/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 
 # Findings of boot.cfg kernelopt compatibility setting to install ESXi on more hardware offerings
-#    Use 'tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none' to redirect the Direct Console to com1
+#    Use 'tty2Port=com1 logPort=none gdbPort=none' to redirect the Direct Console to com1
 #       If necessary to enforce serial port settings, use 'com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none'
 #    'preferVmklinux=TRUE' is to change the behaviour during boot process, first to load Linux drivers instead of Native drivers.
 #       As example, this is the case for driver MEL-mlnx-en-1.9.9.4-1OEM-550.0.0.1331820-offline_bundle-2765235.zip.
 #       See zip content \vib20\net-mlx4-core\Mellanox_bootbank_net-mlx4-core_1.9.9.4-1OEM.550.0.0.1331820.vib\descriptor.xml: It contains 'etc/vmware/driver.map.d/mlx4_core.map'.
-#       See http://www.justait.net/2014/08/vsphere-native-drivers-22.html, https://www.virtuallyghetto.com/2013/11/esxi-55-introduces-new-native-device.html
+#       See http://www.justait.net/2014/08/vsphere-native-drivers-22.html, https://www.virtuallyghetto.com/2013/11/esxi-55-introduces-new-native-device.html,
+#           https://allvirtualblog.wordpress.com/2016/05/10/getting-ahead-with-esxi-on-headless-system/
 #       Be aware, the mklinux driver stack is deprecated https://blogs.vmware.com/vsphere/2019/04/what-is-the-impact-of-the-vmklinux-driver-stack-deprecation.html
 #    'ignoreHeadless=TRUE' During system boot up, if ESXi finds No VGA Present or Headless flag set in ACPI FADT table and if there is no user specified change in any of the serial services, 
 #       the DCUI service will display on a serial port. See https://communities.vmware.com/thread/600995
@@ -226,12 +227,13 @@ sed 's/boot.cfg/boot.cfg text/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cf
 #       See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
 #    'noIOMMU' see https://communities.vmware.com/thread/515358
 #
-#    remove cdromBoot and apply DCUI window in text mode
+#    apply setting
+#       redirect of the output and direct console to com1
+#       cdromBoot and runweasel
+#       preferVmklinux=TRUE
+#       (no DCUI window, boot into ESXi Shell)
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
-sed 's/kernelopt=cdromBoot runweasel/kernelopt=runweasel text nofb/' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
-#    apply redirect the Direct Console to com1 setting
-cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
-sed 's/kernelopt=runweasel/kernelopt=runweasel com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none /' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+sed 's/kernelopt=cdromBoot runweasel/kernelopt=cdromBoot runweasel com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none preferVmklinux=TRUE /' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
 # same setting for EFI
 cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
