@@ -33,20 +33,20 @@ add-esxsoftwaredepot $ESXiZipFile
 new-esximageprofile -CloneProfile $ESXiZipFileName -Name $ImageProfileName -Vendor $VendorName
 set-esximageprofile -imageprofile $ImageProfileName -AcceptanceLevel PartnerSupported
 # get-esximageprofile -name $ImageProfileName | select-object -expandproperty viblist | sort-object
-Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-en
-Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-core
-Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core
-Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-en
-Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-rdma
-# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx5-core
-# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mst
+# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-en
+# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-core
+# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-rdma
+# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-en
+# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core
 
-Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MEL-mlnx-3.15.5.5-offline_bundle-4038025.zip
-Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core,nmlx4-en,nmlx4-rdma
+# Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MEL-mlnx-3.15.5.5-offline_bundle-4038025.zip
+# Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core,nmlx4-en,nmlx4-rdma
 
-# Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MLNX-OFED-ESX-1.8.2.5-10EM-600.0.0.2494585.zip
-# Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-ib-cm,net-ib-core,net-ib-ipoib,net-ib-mad,net-ib-sa,net-ib-umad,net-memtrack,net-mlx4-core,net-mlx4-ib,scsi-ib-srp
+# OFED driver
+Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MLNX-OFED-ESX-1.8.2.5-10EM-600.0.0.2494585.zip
+Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-ib-cm,net-ib-core,net-ib-ipoib,net-ib-mad,net-ib-sa,net-ib-umad,net-memtrack,net-mlx4-core,net-mlx4-ib,scsi-ib-srp
 
+# CIM provider
 Add-EsxSoftwareDepot -DepotUrl $DepotFolder\VENDOR_CODE-ESX-5.5.0-mcim5_5-1331820-offline_bundle-1989798.zip
 Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage mlnxprovider
 

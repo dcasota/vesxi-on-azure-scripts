@@ -108,7 +108,7 @@ tdnf install -y tar wget curl sed syslinux
 # Example: 
 #   raw google drive web url:  https://drive.google.com/open?id=1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l
 #   resulting GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
-GOOGLEDRIVEFILEID="1OZuszhq6ZxLqTAZ2nxqFc8JdPoN57ULE"
+GOOGLEDRIVEFILEID="1N4j5ucJ3UQZjuqWaP_Ktw2cXYbEuISKF"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -188,26 +188,34 @@ umount $ESXICD
 rm -r $ESXICD
 rm ./$ISOFILENAME
 
-# Step #4.6: Enable serial console redirection and add virtualization extension compatibility setting
-#----------------------------------------------------------------------------------------------------
+# Step #4.6: Enable serial console redirection, add virtualization extension compatibility setting and add kickstart file
+#------------------------------------------------------------------------------------------------------------------------
 # On Azure install ESXi via serial port, see weblinks about installing ESXi over serial console
 #    http://www.vmwareadmins.com/installing-esxi-serial-console-headless-video-card/ and
 #    https://pcengines.ch/ESXi_6.5.0_installation.txt and
 #    https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.esxi.install.doc/GUID-B67A3552-CECA-4BF7-9487-4F36507CD99E.html
 #    https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.esxi.install.doc/GUID-7651C4A2-C358-40C2-8990-D82BDB8127E0.html
 
+# Add kickstart file
+cp /root/ks.cfg $VHDMOUNT/ks.cfg
+
 # Specify serial ports by adding line 'serial 0 115200' and 'serial 1 115200' after 'DEFAULT menu.c32' in syslinux.cfg
 #    Serial 0 = /dev/ttyS0 = com1
 #    Serial 1 = /dev/ttyS1 = com2
 mv $VHDMOUNT/isolinux.cfg $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
-sed 's/DEFAULT menu.c32/&\nserial 0 115200&\nserial 1 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+sed 's/DEFAULT menu.c32/&\nserial 0 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
-# Redirect console to serial port com1
-sed 's/APPEND -c boot.cfg/APPEND -c boot.cfg tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
-# Enable text UI (add it to APPEND in syslinux.cfg)
+sed 's/serial 0 115200/&\nserial 1 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
-sed 's/boot.cfg/boot.cfg text/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+#    apply setting
+#       Redirect console to serial port com1
+#       text ui
+#       add ks.cfg
+#          https://stackoverflow.com/questions/16790793/how-to-replace-strings-containing-slashes-with-sed
+VALUE="ks=file://ks.cfg"
+LINE=$(echo ${VALUE} | sed -e "s#/#\\\/#g")
+sed "s/boot.cfg/boot.cfg ks=${LINE} text com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 
 # Findings of boot.cfg kernelopt compatibility setting to install ESXi on more hardware offerings
 #    Use 'tty2Port=com1 logPort=none gdbPort=none' to redirect the Direct Console to com1
@@ -229,11 +237,14 @@ sed 's/boot.cfg/boot.cfg text/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cf
 #
 #    apply setting
 #       redirect of the output and direct console to com1
-#       cdromBoot and runweasel
-#       preferVmklinux=TRUE
+#       remove cdromBoot
 #       (no DCUI window, boot into ESXi Shell)
+#       add ks.cfg
+#          https://stackoverflow.com/questions/16790793/how-to-replace-strings-containing-slashes-with-sed
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
-sed 's/kernelopt=cdromBoot runweasel/kernelopt=cdromBoot runweasel com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none preferVmklinux=TRUE /' $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+VALUE="ks=file:/ks.cfg"
+LINE=$(echo ${VALUE} | sed -e "s#/#\\\/#g")
+sed "s/kernelopt=cdromBoot runweasel/kernelopt=runweasel ${LINE} text com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none/" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
 # same setting for EFI
 cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
@@ -270,6 +281,57 @@ WantedBy=multi-user.target
 EOF1
 cd /lib/systemd/system/multi-user.target.wants/
 ln -s ../configurebootdisk.service configurebootdisk.service
+
+
+# create kickstart file to be copied to the ESXi data disk
+KICKSTARTFILE="/root/ks.cfg"
+cat > $KICKSTARTFILE <<'EOF2'
+# Kickstart file
+
+# Accept the VMware End User License Agreement
+vmaccepteula
+
+# Set the root password for the DCUI and ESXi Shell
+rootpw VMware1!
+
+# Clear any partitions on all disks
+clearpart --alldrives --overwritevmfs
+ 
+# Install on the first local disk
+install --firstdisk=local --overwritevmfs
+ 
+# Reboot the host after the scripted installation is completed
+reboot
+
+%pre --interpreter=busybox
+   
+%post --interpreter=busybox
+
+%firstboot --interpreter=busybox
+ 
+# enable & start remote ESXi Shell (SSH)
+vim-cmd hostsvc/enable_ssh
+vim-cmd hostsvc/start_ssh
+ 
+# enable & start ESXi Shell (TSM)
+vim-cmd hostsvc/enable_esx_shell
+vim-cmd hostsvc/start_esx_shell
+
+# enable High Performance
+esxcli system settings advanced set --option=/Power/CpuPolicy --string-value="High Performance" 
+ 
+# supress ESXi Shell shell warning
+esxcli system settings advanced set -o /UserVars/SuppressShellWarning -i 1
+
+# ESXi Shell interactive idle time logout
+esxcli system settings advanced set -o /UserVars/ESXiShellInteractiveTimeOut -i 3600
+
+/sbin/chkconfig ntpd on
+
+# Restart a last time
+reboot
+EOF2
+
 
 # Step #4: reboot, afterwards start the configurebootdisk.service created (see Step 4.1)
 # --------------------------------------------------------------------------------------

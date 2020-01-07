@@ -182,6 +182,9 @@ t10.ATA_____Virtual_HD__________________________________________________:
 # if a cdrom would be present the mount command would be
 # vmkload_mod iso9660
 # /sbin/vsish -e set /vmkModules/iso9660/mount mpx.vmhba32:C0:T0:L0
+# vmkload_mod -l|grep iso
+
+esxcfg-mpath -l
 
 [root@localhost:~] localcli device driver list
 Device  Driver  Status  KB Article
@@ -319,4 +322,7 @@ sfcbd-init: starting sfcbd
 # 5) Copying files
 # ----------------
 # (does not work)
+# FAT32
 # mcopy -i /dev/disks/vmhba0:C0:T0:L0:1 '::/isolinux.cfg' "/tmp/isolinux.cfg" -n
+# NTFS
+ntfscat -f /dev/disks/vmhba0:C0:T0:L0:1 /isolinux.cfg > /tmp/isolinux.cfg

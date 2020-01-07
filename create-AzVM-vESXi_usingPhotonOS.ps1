@@ -423,6 +423,14 @@ for ($i=0;$i -lt $Timeout; $i++) {
 		    Set-AzVMOSDisk -VM $virtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name
 		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
 
+            # Detach Photon OS disk
+            Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
+		    $SourceDiskName=(Get-AzDisk -ResourceGroupName $resourceGroupName | Select Name).Name[0]
+		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
+		    $virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+		    Remove-AzVMDataDisk -VM $VirtualMachine -Name $SourceDiskName
+		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
+
 		    Start-AzVM -ResourceGroupName $resourceGroupName -Name $vmName
             break
         }
