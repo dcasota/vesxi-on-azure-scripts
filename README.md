@@ -53,7 +53,7 @@ The script processes following steps:
    In the actual development phase, the ESXi setup stops as no network adapter can be found.
    See ```prepare-disk.sh``` 'Network adapter Mellanox ConnectX-3 virtual function'.
     
-    ![NoNetworkAdapter](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapter.png)
+![NoNetworkAdapter](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapter.png)
 
 
  
