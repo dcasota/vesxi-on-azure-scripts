@@ -47,9 +47,15 @@ The script processes following steps:
  6. create the vm with Photon OS as os disk an a data disk processed with cloud-init custom data from ```$Bashfilename```
     See ```prepare-disk.sh``` for detailed information.
  7. Wait for powerstate stopped. Convert the disks created to managed disks.
-    Detach and re-attach the bootable ESXi data disk as os disk. Afterwards, boot the ESXi VM.
+    Detach and re-attach the bootable ESXi data disk as os disk. Afterwards, boot the VM into ESXi Setup.
+    The ESXi kickstart setup and the detach of the .vhdified ISO after ESXi setup, aren't automated yet.
+   
+   In the actual development phase, the ESXi setup stops as no network adapter can be found.
+   See ```prepare-disk.sh``` 'Network adapter Mellanox ConnectX-3 virtual function'.
+    
+    ![NoNetworkAdapter](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXi67.png)
 
- The ESXi kickstart setup and the detach of the .vhdified ISO after ESXi setup, aren't automated yet.
+
  
 # ```prepare-disk.sh```
 The bash script configures an attached data disk as ESXi bootable medium. It must run on VMware Photon OS. And you have to enter your location of the ESXi ISO medium. See comments inside the script. The script processes following steps:
