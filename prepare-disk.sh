@@ -108,7 +108,7 @@ tdnf install -y tar wget curl sed syslinux
 # Example: 
 #   raw google drive web url:  https://drive.google.com/open?id=1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l
 #   resulting GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
-GOOGLEDRIVEFILEID="1N4j5ucJ3UQZjuqWaP_Ktw2cXYbEuISKF"
+GOOGLEDRIVEFILEID="1jj4VDWtBWzNynE5ObmB8lJFg2FtSEtmt"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -208,14 +208,27 @@ sed 's/DEFAULT menu.c32/&\nserial 0 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUN
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 sed 's/serial 0 115200/&\nserial 1 115200/' $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
-#    apply setting
-#       Redirect console to serial port com1
-#       text ui
-#       add ks.cfg
-#          https://stackoverflow.com/questions/16790793/how-to-replace-strings-containing-slashes-with-sed
-VALUE="ks=file://ks.cfg"
-LINE=$(echo ${VALUE} | sed -e "s#/#\\\/#g")
-sed "s/boot.cfg/boot.cfg ks=${LINE} text com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+
+#    apply setting A)
+#       - Redirect tty2Port=com1 to serial port com1
+#       - Redirect tty1Port=com1 to serial port com1
+#       - parameters text nofb
+#       As result the setup boots into ESXi Shell
+sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+
+#    apply setting B)
+#       - Redirect tty2port to serial port com1
+#       As result the setup boots into DCUI
+# sed "s/boot.cfg/boot.cfg tty2Port=com1 logPort=none gdbPort=none/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+
+#    apply setting C)
+#       - Redirect tty2Port=com1 to serial port com1
+#       - Redirect tty1Port=com1 to serial port com1
+#       - ks.cfg
+#            https://stackoverflow.com/questions/16790793/how-to-replace-strings-containing-slashes-with-sed
+# VALUE="ks=file://ks.cfg"
+# LINE=$(echo ${VALUE} | sed -e "s#/#\\\/#g")
+# sed "s/boot.cfg/boot.cfg tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none ${LINE}/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 
 # Findings of boot.cfg kernelopt compatibility setting to install ESXi on more hardware offerings
 #    Use 'tty2Port=com1 logPort=none gdbPort=none' to redirect the Direct Console to com1
@@ -229,22 +242,25 @@ sed "s/boot.cfg/boot.cfg ks=${LINE} text com1_baud=115200 com1_Port=0x3f8 tty1Po
 #    'ignoreHeadless=TRUE' During system boot up, if ESXi finds No VGA Present or Headless flag set in ACPI FADT table and if there is no user specified change in any of the serial services, 
 #       the DCUI service will display on a serial port. See https://communities.vmware.com/thread/600995
 #       Related settings: 'ACPI=FALSE powerManagement=FALSE'
-#    'runweasel text nofb' to get DCUI window in text mode
+#    'runweasel text nofb' to get window in text mode. The Linux framebuffer allows graphics to be displayed on the console without needing to run X-Windows. 
 #    'installerDiskDumpSlotSize=2560 no-auto-partition devListStabilityCount=10' is to avoid that bootbank/scratch is not get mounted, see https://kb.vmware.com/s/article/2149444
 #    'iovDisableIR=TRUE' disables interrupt remapping as PCI devices may stop responding when using interrupt remapping. See https://kb.vmware.com/s/article/1030265
 #       See weblinks http://www.garethjones294.com/running-esxi-6-on-server-2016-hyper-v/ and https://communities.vmware.com/thread/600995
 #    'noIOMMU' see https://communities.vmware.com/thread/515358
 #
-#    apply setting
-#       redirect of the output and direct console to com1
-#       remove cdromBoot
-#       (no DCUI window, boot into ESXi Shell)
-#       add ks.cfg
-#          https://stackoverflow.com/questions/16790793/how-to-replace-strings-containing-slashes-with-sed
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
-VALUE="ks=file:/ks.cfg"
-LINE=$(echo ${VALUE} | sed -e "s#/#\\\/#g")
-sed "s/kernelopt=cdromBoot runweasel/kernelopt=runweasel ${LINE} text com1_baud=115200 com1_Port=0x3f8 tty1Port=com1 com2_baud=115200 com2_Port=0x2f8 tty2Port=com1 logPort=none gdbPort=none/" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+#    apply setting A)
+#       - runweasel text nofb
+#       - preferVmklinux=TRUE
+#       - iovDisableIR=TRUE
+sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel text nofb preferVmklinux=TRUE iovDisableIR=TRUE/" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+
+#    apply setting B)
+#       - runweasel, add ks.cfg
+#            https://stackoverflow.com/questions/16790793/how-to-replace-strings-containing-slashes-with-sed
+# VALUE="ks=file:/ks.cfg"
+# LINE=$(echo ${VALUE} | sed -e "s#/#\\\/#g")
+# sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel ${LINE} /" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
 # same setting for EFI
 cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
