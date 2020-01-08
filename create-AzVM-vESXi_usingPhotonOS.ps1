@@ -162,7 +162,7 @@ function create-AzVM-vESXi_usingPhotonOS{
 
         [Parameter(Mandatory = $false)]
         [ValidateSet('eastus','westus','westeurope')]
-        [String]$LocationName="westeurope",
+        [String]$LocationName="westus",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$ResourceGroupName="photonos-lab-rg",
 
