@@ -55,7 +55,7 @@ The script processes following steps:
     
 ![NoNetworkAdapter](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapter.png)
 
-
+Hint: The helper script ```set-AzVMboot-PhotonOS```switches os disk from ESXi to Photon OS (and ```set-AzVMboot-ESXi``` does vice versa).
  
 # ```prepare-disk.sh```
 The bash script configures an attached data disk as ESXi bootable medium. It must run on VMware Photon OS. And you have to enter your location of the ESXi ISO medium. See comments inside the script. The script processes following steps:
