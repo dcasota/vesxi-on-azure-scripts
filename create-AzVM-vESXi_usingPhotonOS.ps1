@@ -289,14 +289,6 @@ if ($result.exists -eq $false)
 
 # Step #4: create virtual network and security group
 # --------------------------------------------------
-# create network if not already set
-$vnet = get-azvirtualnetwork -name $networkname -ResourceGroupName $resourcegroupname -ErrorAction SilentlyContinue
-if (([string]::IsNullOrEmpty($vnet)))
-{
-	$ServerSubnet  = New-AzVirtualNetworkSubnetConfig -Name frontendSubnet  -AddressPrefix $ServerSubnetAddressPrefix
-	$vnet = New-AzVirtualNetwork -Name $NetworkName -ResourceGroupName $ResourceGroupName -Location $LocationName -AddressPrefix $VnetAddressPrefix -Subnet $ServerSubnet
-	$vnet | Set-AzVirtualNetwork
-}
 
 # networksecurityruleconfig, UNFINISHED as VMware ESXi ports must be included
 $nsg=get-AzNetworkSecurityGroup -Name $nsgName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
@@ -311,6 +303,15 @@ if (([string]::IsNullOrEmpty($nsg)))
 	-SourceAddressPrefix Internet -SourcePortRange * `
 	-DestinationAddressPrefix * -DestinationPortRange 22
 	$nsg = New-AzNetworkSecurityGroup -Name $nsgName -ResourceGroupName $ResourceGroupName -Location $LocationName -SecurityRules $rdpRule1,$rdpRule2
+}
+
+# network if not already set
+$vnet = get-azvirtualnetwork -name $networkname -ResourceGroupName $resourcegroupname -ErrorAction SilentlyContinue
+if (([string]::IsNullOrEmpty($vnet)))
+{
+	$ServerSubnet  = New-AzVirtualNetworkSubnetConfig -Name frontendSubnet  -AddressPrefix $ServerSubnetAddressPrefix -NetworkSecurityGroup $nsg
+	$vnet = New-AzVirtualNetwork -Name $NetworkName -ResourceGroupName $ResourceGroupName -Location $LocationName -AddressPrefix $VnetAddressPrefix -Subnet $ServerSubnet
+	$vnet | Set-AzVirtualNetwork
 }
 
 # Step #5: create two nics, one with a public IP address
