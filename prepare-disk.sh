@@ -108,7 +108,7 @@ tdnf install -y tar wget curl sed syslinux
 # Example: 
 #   raw google drive web url:  https://drive.google.com/open?id=1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l
 #   resulting GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
-GOOGLEDRIVEFILEID="1jj4VDWtBWzNynE5ObmB8lJFg2FtSEtmt"
+GOOGLEDRIVEFILEID="1ThqAIoqGNosGO8zrex_JpV2XMNeUS5bK"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 

@@ -110,7 +110,7 @@
 #
 #                  Research/Findings on Photon OS:
 #                     lspci output (tdnf install pciutils):
-#                     lspci | grep Mellanox
+#                     lspci -nn -v| grep Mellanox
 #                        82d1:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
 #                        Subsystem: Mellanox Technologies Device [15b3:61b0]
 #                        9832:00:02.0 Ethernet controller [0200]: Mellanox Technologies MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function] [15b3:1004]
@@ -132,7 +132,12 @@
 #                        0000:00:07.3 Bridge: Intel Corporation 82371AB/EB/MB PIIX4 ACPI
 #                        0000:00:08.0 VGA compatible controller: Microsoft Corporation Hyper-V virtual VGA
 #                     localcli device driver list shows up vmhba0 only. There is no vmnic.
-#                     vmkload_mod shows up the drivers loaded, e.g. mlx4_en.
+#                     The subsystem 15b3:61b0 (compare lspci output on Photon OS) is not listed in /etc/vmware/pci.ids.
+#                        1004  MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function
+#                              15b3 61b0  Mellanox Technologies Device       <----------------------- should be added
+#                        1005  MT27510 Family
+#                        
+#                  None of the following adapter drivers includes the 15b3:61b0 subsystem.
 #
 #                  Mellanox ConnectX-3 [15b3:1004] driver support for VMware ESXi by VMware
 #                     See https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc
