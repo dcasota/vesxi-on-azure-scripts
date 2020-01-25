@@ -103,8 +103,7 @@ The ESXi setup starts but fails with No Network Adapter found. Some efforts are 
 On the ESXi setup Shell phase, the Mellanox nic adapter are not listed through 'lspci'. The subsystem 15b3:61b0 from the lspci output on Photon OS is not listed in /etc/vmware/pci.ids. So far, none of the adapter drivers includes the PCI ID '15b3:61b0 Mellanox Technologies Device'.
 Additional findings are documented in 'Findings ESXi Shell about Virtual Machine Hardware.txt'.
 'DMA IB RoCE iWARP.txt' is a beginner help about RDMA and Infiniband technology to get start reading docs like  http://www.mellanox.com/related-docs/prod_software/Mellanox_Native_ESX_Driver_for_VMware_vSphere_6.5_User_Manual_v3.16.11.10.pdf.
-Photon OS 3.0rev2 
-Not 100% sure if ESXi UEFI boot is needed. In any case, early ESXi boot using in Bios does not show up any correlating dmesg ACPI message. All the Mellanox ESXi ConnectX-3 adapters are native drivers. As the Mellanox adapters DO show up on Photon OS, it has nothing to do with Azure Generation2-VM-sizes restrictions like Virtualization-based Security (VBS), Secure Boot, etc.
+Not 100% sure if additionally ESXi UEFI boot is needed. In any case, early ESXi boot using in Bios does not show up any correlating dmesg ACPI message. But, the Mellanox ESXi ConnectX-3 adapter releases are native drivers. As the Mellanox adapters DO show up on Photon OS, it has nothing to do with Azure Generation2-VM-sizes restrictions like Virtualization-based Security (VBS), Secure Boot, etc.
 
  # ```create-customizedESXi-iso.ps1```
 The powershell script creates a customized ESXi ISO with Mellanox adapter driver.
