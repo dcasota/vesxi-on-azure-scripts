@@ -33,7 +33,7 @@ An ESXi VM offering on Azure must support:
 - Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it in a VM.
 
 VMware Photon OS is installed first as some sort of helper-OS for the ESXi boot medium preparation. VMware Photon OS is a tiny IoT cloud os. See https://vmware.github.io/photon/.
-The VMware Linux-distro is delivered in several disk formats. The script uses the Azure .vhd. It is important to know that actually (December 2019), .vhd is still the only Azure supported interoperability disk format. See .vhd limitations https://docs.microsoft.com/en-us/azure/virtual-machines/windows/generation-2#features-and-capabilities. Keep that in mind when running some tests.
+The VMware Linux-distro is delivered in several disk formats. The script uses the Azure .vhd Photon OS 3.0rev2 release. It is important to know that actually (December 2019), .vhd is still the only Azure supported interoperability disk format. See .vhd limitations https://docs.microsoft.com/en-us/azure/virtual-machines/windows/generation-2#features-and-capabilities. Keep that in mind when running some tests.
 
 VMware ESXi usually is delivered as an ISO file. An Azure VM cannot attach an ISO like VMware vSphere. In my studies so far the simplest solution make run ESXi is creating the VM with temporary installed VMware Photon OS. In short: from the VMware Photon OS .vhd, the Azure VM is created using it as osdisk as well as an attached data disk. The data disk is installed with the ISO bits of ESXi. Then, the disks are switched and ESXi boots from the prepared data disk. During ESXi setup, you select the second disk as installation disk, and detach the .vhdified ISO after ESXi setup.
 
@@ -103,6 +103,8 @@ The ESXi setup starts but fails with No Network Adapter found. Some efforts are 
 On the ESXi setup Shell phase, the Mellanox nic adapter are not listed through 'lspci'. The subsystem 15b3:61b0 from the lspci output on Photon OS is not listed in /etc/vmware/pci.ids. So far, none of the adapter drivers includes the PCI ID '15b3:61b0 Mellanox Technologies Device'.
 Additional findings are documented in 'Findings ESXi Shell about Virtual Machine Hardware.txt'.
 'DMA IB RoCE iWARP.txt' is a beginner help about RDMA and Infiniband technology to get start reading docs like  http://www.mellanox.com/related-docs/prod_software/Mellanox_Native_ESX_Driver_for_VMware_vSphere_6.5_User_Manual_v3.16.11.10.pdf.
+Photon OS 3.0rev2 
+Not 100% sure if ESXi UEFI boot is needed. In any case, early ESXi boot using in Bios does not show up any correlating dmesg ACPI message. All the Mellanox ESXi ConnectX-3 adapters are native drivers. As the Mellanox adapters DO show up on Photon OS, it has nothing to do with Azure Generation2-VM-sizes restrictions like Virtualization-based Security (VBS), Secure Boot, etc.
 
  # ```create-customizedESXi-iso.ps1```
 The powershell script creates a customized ESXi ISO with Mellanox adapter driver.
