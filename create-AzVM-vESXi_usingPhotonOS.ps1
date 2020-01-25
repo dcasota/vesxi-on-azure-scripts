@@ -103,10 +103,11 @@
 # - Creation of the VM has finished but custom-data of az vm create was not processed. On the console you see an error of missing ovf-env.xml file.
 #   workaround: none
 #               delete resource group and rerun script.
-# - ESXi starts with 'no network adapters'
+# - ESXi setup starts with 'no network adapters'
 #   workaround: none
 #               Findings:
-#                  The Azure Standard_E4s_v3 offering includes the accelerated networking feature, and exposes ConnectX-3 as nic adapter type. Its integration to ESXi didn't work yet.
+#                  The Azure Standard_E4s_v3 and above offerings include the accelerated networking feature, which is necessary to expose the underlying nic adapter functionality to the VM.
+#                  Installing the VM as Photon OS, it exposes the Mellanox ConnectX-3 nic adapter virtual function. Unfortunately, installing the VM as ESXi does not show up any nic adapter type, hence, ESXi setup cannot proceed.
 #
 #                  Research/Findings on Photon OS:
 #                     lspci output (tdnf install pciutils):
@@ -132,24 +133,27 @@
 #                        0000:00:07.3 Bridge: Intel Corporation 82371AB/EB/MB PIIX4 ACPI
 #                        0000:00:08.0 VGA compatible controller: Microsoft Corporation Hyper-V virtual VGA
 #                     localcli device driver list shows up vmhba0 only. There is no vmnic.
-#                     The subsystem 15b3:61b0 (compare lspci output on Photon OS) is not listed in /etc/vmware/pci.ids.
-#                        1004  MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function
-#                              15b3 61b0  Mellanox Technologies Device       <----------------------- should be added
-#                        1005  MT27510 Family
-#                        
-#                  None of the following adapter drivers includes the 15b3:61b0 subsystem.
 #
-#                  Mellanox ConnectX-3 [15b3:1004] driver support for VMware ESXi by VMware
-#                     See https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc
+#                  According to the findings on Photon OS, the Azure offering includes Mellanox ConnectX-3 nic adapter virtual function [15b3:1004] subsystem 15b3:61b0.    
+#                  Possible drivers are:
 #
-#                  VMware Driver support for Mellanox ConnectX-3 by Mellanox 
-#                     See https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver (click on 'View the list of the latest VMware driver version for Mellanox products')
+#                     Mellanox ConnectX-3 [15b3:1004] driver support for VMware ESXi by VMware
+#                        See https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc
 #
-#                  Azure VM offering specifically with ConnectX functionality by Microsoft Azure
-#                     See https://github.com/MicrosoftDocs/azure-docs/issues/45303 "There is no possibility for now for checking/selecting the Mellanox driver for specific VM size before deploying."
+#                     VMware Driver support for Mellanox ConnectX-3 by Mellanox 
+#                        See https://www.mellanox.com/page/products_dyn?product_family=29&mtag=vmware_driver (click on 'View the list of the latest VMware driver version for Mellanox products')
 #
-#                  Mellanox Adapter CIM Provider for VMware ESX/ESXi
-#                     See https://www.mellanox.com/page/products_dyn?product_family=131&mtag=common_information_model
+#                     Azure VM offering specifically with ConnectX functionality by Microsoft Azure
+#                        See https://github.com/MicrosoftDocs/azure-docs/issues/45303 "There is no possibility for now for checking/selecting the Mellanox driver for specific VM size before deploying."
+#
+#                     Mellanox Adapter CIM Provider for VMware ESX/ESXi
+#                        See https://www.mellanox.com/page/products_dyn?product_family=131&mtag=common_information_model
+#
+#                  Conclusion so far:
+#                  1) Afaik none of the ESXi Mellanox ConnectX-3 adapter virtual function [15b3:1004] includes the 15b3:61b0 subsystem for an Azure setup compatibility.
+#                  2) Not 100% sure if ESXi UEFI boot is needed. In any case, early ESXi boot using in Bios does not show up any correlating dmesg ACPI message.
+#                     All the Mellanox ESXi ConnectX-3 adapters are native drivers.
+#                     As the Mellanox adapters DO show up on Photon OS, it has nothing to do with Azure Generation2-VM-sizes restrictions like Virtualization-based Security (VBS), Secure Boot, etc.
 #
 
 function create-AzVM-vESXi_usingPhotonOS{

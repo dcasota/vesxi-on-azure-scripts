@@ -108,7 +108,7 @@ tdnf install -y tar wget curl sed syslinux
 # Example: 
 #   raw google drive web url:  https://drive.google.com/open?id=1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l
 #   resulting GOOGLEDRIVEFILEID="1Ff_Lt6Yh6qPoZZEbiT4rC3eKmGvqPS4l"
-GOOGLEDRIVEFILEID="1ThqAIoqGNosGO8zrex_JpV2XMNeUS5bK"
+GOOGLEDRIVEFILEID="1j2SbfBIFHbzxli9LLAFhaE6uT5QKgo6j"
 GOOGLEDRIVEURL="https://docs.google.com/uc?export=download&id=$GOOGLEDRIVEFILEID"
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate $GOOGLEDRIVEURL -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=$GOOGLEDRIVEFILEID" -O $ISOFILENAME && rm -rf /tmp/cookies.txt
 
@@ -214,7 +214,7 @@ cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 #       - Redirect tty1Port=com1 to serial port com1
 #       - parameters text nofb
 #       As result the setup boots into ESXi Shell
-sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none iovDisableIR=TRUE/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 
 #    apply setting B)
 #       - Redirect tty2port to serial port com1
@@ -253,7 +253,7 @@ cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
 #       - runweasel text nofb
 #       - preferVmklinux=TRUE
 #       - iovDisableIR=TRUE
-sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel text nofb preferVmklinux=TRUE iovDisableIR=TRUE/" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel text nofb /" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
 #    apply setting B)
 #       - runweasel, add ks.cfg
@@ -262,9 +262,10 @@ sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel text nofb preferVmklinu
 # LINE=$(echo ${VALUE} | sed -e "s#/#\\\/#g")
 # sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel ${LINE} /" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
-# same setting for EFI
+# setting for EFI
 cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg
+cp $VHDMOUNT/EFI/boot/bootx64.efi $VHDMOUNT/mboot.efi
 
 # Step #4.7: power down the VM
 #-----------------------------

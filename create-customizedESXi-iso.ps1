@@ -18,7 +18,7 @@
 #    https://vmexplorer.com/2018/06/08/home-lab-gen-iv-part-v-installing-mellanox-hcas-with-esxi-6-5/
 #    https://www.virtualizestuff.com/2016/11/03/creating-custom-esxi-image/
 #
-# drivers loaded (samples)
+# drivers (samples)
 # [root@localhost:/opt/mellanox/bin] localcli software vib list | grep MEL
 # iser                           1.0.0.2-1OEM.650.0.0.4598673          MEL       PartnerSupported  -
 # net-ib-core                    2.4.0.0-1OEM.600.0.0.2494585          MEL       PartnerSupported  -
@@ -38,7 +38,7 @@
 
 $ESXiZipFileName="ESXi-6.5.0-20191204001-standard"
 $ESXiZipFile="J:/"+$ESXiZipFileName+".zip"
-$ImageProfileName="ESXi65Lab"
+$ImageProfileName="ESXi-v65-Lab"
 $DepotFolder="J:\driver-offline-bundle65"
 $VendorName="customized by dcasota"
 $ISOFile="j:\ESXi65-customized.iso"
@@ -57,22 +57,38 @@ set-esximageprofile -imageprofile $ImageProfileName -AcceptanceLevel PartnerSupp
 
 # OFED driver
 # Mellanox OFED InfiniBand Driver for VMware® ESXi Server, see https://www.mellanox.com/page/products_dyn?product_family=36&mtag=vmware_drivers
-# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-en
-# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-core
-# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-rdma
-# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-en
-# Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core
+
+# Reference https://vmexplorer.com/2018/06/08/home-lab-gen-iv-part-v-installing-mellanox-hcas-with-esxi-6-5/
+Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-en
+Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-mlx4-core
+Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-rdma
+Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-en
+Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core
+Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx5-core
 Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MLNX-OFED-ESX-1.8.2.5-10EM-600.0.0.2494585.zip
 Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-ib-cm,net-ib-core,net-ib-ipoib,net-ib-mad,net-ib-sa,net-ib-umad,net-memtrack,net-mlx4-core,net-mlx4-ib,scsi-ib-srp
-Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MLNX-OFED-ESX-2.4.0.0-10EM-600.0.0.2494585.zip
-Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-ib-core,net-ib-ipoib,net-ib-mad,net-ib-sa,net-mlx-compat,net-mlx4-core,net-mlx4-en,net-mlx4-ib
-# in utils.sh anstatt esxcli mit localcli ersetzen
+# newer OFED driver version
+# Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MLNX-OFED-ESX-2.4.0.0-10EM-600.0.0.2494585.zip
+# Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage net-ib-core,net-ib-ipoib,net-ib-mad,net-ib-sa,net-mlx-compat,net-mlx4-core,net-mlx4-en,net-mlx4-ib
 
 # MLNX driver
+# The following procedure does not work, see See https://support.hpe.com/hpsc/doc/public/display?docId=emr_na-a00026164en_us
 # Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MEL-mlnx-3.15.5.5-offline_bundle-4038025.zip
 # Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core,nmlx4-en,nmlx4-rdma
-Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MLNX-NATIVE-ESX-ConnectX-3_3.16.11.10-10EM-650.0.0.4598673-offline_bundle-12539849.zip
-Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core,nmlx4-en,nmlx4-rdma
+# Unzip the offline bundle, and add all .vib one by one
+$vib=Get-EsxSoftwarePackage -PackageUrl $DepotFolder\MEL-mlnx-3.15.5.5-offline_bundle-4038025\vib20\nmlx4-core\MEL_bootbank_nmlx4-core_3.15.5.5-1OEM.600.0.0.2768847.vib -ErrorAction SilentlyContinue
+Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage $vib
+$vib=Get-EsxSoftwarePackage -PackageUrl $DepotFolder\MEL-mlnx-3.15.5.5-offline_bundle-4038025\vib20\nmlx4-en\MEL_bootbank_nmlx4-en_3.15.5.5-1OEM.600.0.0.2768847.vib -ErrorAction SilentlyContinue
+Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage $vib
+$vib=Get-EsxSoftwarePackage -PackageUrl $DepotFolder\MEL-mlnx-3.15.5.5-offline_bundle-4038025\vib20\nmlx4-rdma\MEL_bootbank_nmlx4-rdma_3.15.5.5-1OEM.600.0.0.2768847.vib -ErrorAction SilentlyContinue
+Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage $vib
+
+# Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MLNX-NATIVE-ESX-ConnectX-3_3.16.11.10-10EM-650.0.0.4598673-offline_bundle-12539849.zip
+# Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core,nmlx4-en,nmlx4-rdma
+
+# MLNX sniffer
+$vib=Get-EsxSoftwarePackage -PackageUrl $DepotFolder\MEL-ESX-nmlx4_sniffer_mgmt-user-1.16.11-7.vib -ErrorAction SilentlyContinue
+Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage $vib
 
 # ISER driver
 Add-EsxSoftwareDepot -DepotUrl $DepotFolder\MLNX-NATIVE-ESX-ISER_1.0.0.2-10EM-650.0.0.4598673.zip

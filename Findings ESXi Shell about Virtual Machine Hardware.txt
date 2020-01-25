@@ -335,6 +335,21 @@ rm -f /opt/mellanox/bin/utils.sh
 cp /opt/mellanox/bin/utils.sh.0 /opt/mellanox/bin/utils.sh
 
 
+
+
+chmod u+w /etc/vmware/default.map.d/nmlx4_core.map
+cp /etc/vmware/pci.ids /etc/vmware/pci.ids.0
+sed 's/regtype=native,bus=pci,id=15b31010..............,driver=nmlx4_core/&\nregtype=native,bus=pci,id=15b361b0..............,driver=nmlx4_core/' /etc/vmware/default.map.d/nmlx4_core.map > /etc/vmware/default.map.d/nmlx4_core.map.0
+rm -f /etc/vmware/default.map.d/nmlx4_core.map
+cp /etc/vmware/default.map.d/nmlx4_core.map.0 /etc/vmware/default.map.d/nmlx4_core.map
+
+chmod u+w /etc/vmware/driver.map.d/mlx4_core.map
+cp /etc/vmware/driver.map.d/mlx4_core.map /etc/vmware/driver.map.d/mlx4_core.map.0
+sed 's/regtype=linux,bus=pci,id=15b3:1004 0000:0000,driver=mlx4_core,class=network/&\nregtype=linux,bus=pci,id=15b3:1004 15b3:61b0,driver=mlx4_core,class=network/' /etc/vmware/driver.map.d/mlx4_core.map > /etc/vmware/driver.map.d/mlx4_core.map.0
+rm -f /etc/vmware/driver.map.d/mlx4_core.map
+cp /etc/vmware/driver.map.d/mlx4_core.map.0 /etc/vmware/driver.map.d/mlx4_core.map
+
+
 chmod u+w /etc/vmware/pci.ids
 cp /etc/vmware/pci.ids /etc/vmware/pci.ids.0
 sed 's/1004  MT27500\/MT27520 Family \[ConnectX-3\/ConnectX-3 Pro Virtual Function\]/&\n                15b3 61b0  Mellanox Technologies Device/' /etc/vmware/pci.ids > /etc/vmware/pci.ids.0
@@ -365,77 +380,87 @@ sed "s/esxcli/localcli/" /opt/mellanox/bin/mst > /opt/mellanox/bin/mst.0
 rm -f /opt/mellanox/bin/mst
 cp /opt/mellanox/bin/mst.0 /opt/mellanox/bin/mst
 
+chmod u+w /opt/mellanox/bin/mlnx-srp-config
+cp /opt/mellanox/bin/mlnx-srp-config /opt/mellanox/bin/mlnx-srp-config.0
+sed "s/esxcli/localcli/" /opt/mellanox/bin/mlnx-srp-config > /opt/mellanox/bin/mlnx-srp-config.0
+rm -f /opt/mellanox/bin/mlnx-srp-config
+cp /opt/mellanox/bin/mlnx-srp-config.0 /opt/mellanox/bin/mlnx-srp-config
+
+
 localcli system module set --enabled=true --module=nrdma
 localcli system module set --enabled=true --module=nrdma_vmkapi_shim
 localcli system module set --enabled=true --module=nmlx4_rdma
 localcli system module set --enabled=true --module=vmkapi_v2_3_0_0_rdma_shim
 localcli system module set --enabled=true --module=vrdma
 
+
 esxcfg-module -e nmst
-vmkload_mod -s nmst
-
 esxcfg-module -e ib_ipoib
-vmkload_mod -s ib_ipoib
-
 esxcfg-module -e mlx4_ib
-vmkload_mod -s mlx4_ib
-
 esxcfg-module -e ib_sa
-vmkload_mod -s ib_sa
-
 esxcfg-module -e ib_mad
-vmkload_mod -s ib_mad
-
 esxcfg-module -e ib_core
-vmkload_mod -s ib_core
-
 # esxcfg-module -e mlx_compat
-# vmkload_mod -s mlx_compat
-
 esxcfg-module -e ib_cm
-vmkload_mod -s ib_cm
-
-esxcfg-module -e ib_core
-vmkload_mod -s ib_core
-
 esxcfg-module -e ib_umad
-vmkload_mod -s ib_umad
-
 esxcfg-module -e memtrack
-vmkload_mod -s memtrack
-
 esxcfg-module -e ib_srp
-vmkload_mod -s ib_srp
-
 esxcfg-module -e mlx4_ib
-vmkload_mod -s mlx4_ib
-
 # esxcfg-module -e mlx4_core
-# vmkload_mod -s mlx4_core
 # esxcfg-module -e mlx4_en
-# vmkload_mod -s mlx4_en
-
 esxcfg-module -e nmlx4_core
-vmkload_mod -s nmlx4_core
 esxcfg-module -e nmlx4_rdma
-vmkload_mod -s nmlx4_rdma
 esxcfg-module -e nmlx4_en
-vmkload_mod -s nmlx4_en
-
 esxcfg-module -e iser
+
+/opt/mellanox/bin/mst stop
+
+esxcfg-module -u nmst
+esxcfg-module -u ib_ipoib
+esxcfg-module -u mlx4_ib
+esxcfg-module -u ib_sa
+esxcfg-module -u ib_mad
+esxcfg-module -u ib_core
+esxcfg-module -u ib_cm
+esxcfg-module -u ib_umad
+esxcfg-module -u memtrack
+esxcfg-module -u ib_srp
+esxcfg-module -u mlx4_ib
+esxcfg-module -u nmlx4_core
+esxcfg-module -u nmlx4_rdma
+esxcfg-module -u nmlx4_en
+esxcfg-module -u iser
+
+vmkload_mod -s nmst
+vmkload_mod -s ib_ipoib
+vmkload_mod -s mlx4_ib
+vmkload_mod -s ib_sa
+vmkload_mod -s ib_mad
+vmkload_mod -s ib_core
+# vmkload_mod -s mlx_compat
+vmkload_mod -s ib_cm
+vmkload_mod -s ib_umad
+vmkload_mod -s memtrack
+# vmkload_mod -s mlx4_core
+vmkload_mod -s ib_srp
+vmkload_mod -s mlx4_ib
+# vmkload_mod -s mlx4_en
+vmkload_mod -s nmlx4_core
+vmkload_mod -s nmlx4_rdma
+vmkload_mod -s nmlx4_en
 vmkload_mod -s iser
 
 vmkload_mod nmlx4_core
 /opt/mellanox/bin/mst start
 
 localcli system snmp set --enable true
-/etc/init.d/snmpd start
+/etc/init.d/snmpd stop
 
 cd /var
 rm tmp
 mkdir ./tmp
 cd /
-/etc/init.d/sfcbd-watchdog restart
+/etc/init.d/sfcbd-watchdog start
 
 # After running the commands above, vmwMgmtNode1 appears
 # [root@localhost:/dev] ls
@@ -460,7 +485,25 @@ cd /
 # 1005  MT27510 Family
 # 
 
+# But no additional vmhba. Again, something is missing.
+root@localhost:/etc/vmware] vmkchdev -l
+0000:00:00.0 8086:7192 0000:0000 vmkernel
+0000:00:07.0 8086:7110 1414:0000 vmkernel
+0000:00:07.1 8086:7111 0000:0000 vmkernel vmhba0
+0000:00:07.3 8086:7113 0000:0000 vmkernel
+0000:00:08.0 1414:5353 0000:0000 vmkernel
+[root@localhost:/etc/vmware]
 
+#No idea what this mellanox command does
+/opt/mellanox/bin/mlnx-srp-config start
+[root@localhost:/opt/mellanox/bin] ./mlnx-srp-config status
+--> SRP RDM filter rules is [ON]
+--> GSAN nmp satp rule is [OFF]
+--> VAAI rules:
+Value of HardwareAcceleratedMove is 0
+Value of HardwareAcceleratedInit is 0
+Value of HardwareAcceleratedLocking is 0
+[root@localhost:/opt/mellanox/bin]
 
 
 
