@@ -196,6 +196,12 @@ vmhba0  vmkata  normal
 # ----------------------------
 # Reference http://www.mellanox.com/related-docs/prod_software/Mellanox_Native_ESX_Driver_for_VMware_vSphere_6.5_User_Manual_v3.16.11.10.pdf
 
+[root@localhost:/opt] localcli software vib list | grep MEL
+nmlx4-core                     3.16.11.10-1OEM.650.0.0.4598673       MEL       VMwareCertified   -
+nmlx4-en                       3.16.11.10-1OEM.650.0.0.4598673       MEL       VMwareCertified   -
+nmlx4-rdma                     3.16.11.10-1OEM.650.0.0.4598673       MEL       VMwareCertified   -
+[root@localhost:/opt
+
 [root@localhost:~] vmkload_mod -s mlx4_en
 vmkload_mod module information
  input file: /usr/lib/vmware/vmkmod/mlx4_en
@@ -318,6 +324,145 @@ sfcbd-init: starting sfcbd
 2001-01-01T00:01:32.532Z cpu2:66919)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
 2001-01-01T00:01:32.550Z cpu1:66919)WARNING: Mod: 1694: <nrdma>: Export of <ib_alloc_device>@<com.vmware.rdma> failed: already exported in name-space <com.mellanox.ib_core> by <ib_core>
 [root@localhost:~]
+
+# 5) enabling/loading all Mellanox related drivers
+# ------------------------------------------------
+# utils.sh and mst contain esxcli. If running in ESXi Shell mode, localcli only can be used.
+chmod u+w /opt/mellanox/bin/utils.sh
+cp /opt/mellanox/bin/utils.sh /opt/mellanox/bin/utils.sh.0
+sed "s/esxcli/localcli/" /opt/mellanox/bin/utils.sh > /opt/mellanox/bin/utils.sh.0
+rm -f /opt/mellanox/bin/utils.sh
+cp /opt/mellanox/bin/utils.sh.0 /opt/mellanox/bin/utils.sh
+
+
+chmod u+w /etc/vmware/pci.ids
+cp /etc/vmware/pci.ids /etc/vmware/pci.ids.0
+sed 's/1004  MT27500\/MT27520 Family \[ConnectX-3\/ConnectX-3 Pro Virtual Function\]/&\n                15b3 61b0  Mellanox Technologies Device/' /etc/vmware/pci.ids > /etc/vmware/pci.ids.0
+rm -f /etc/vmware/pci.ids
+cp /etc/vmware/pci.ids.0 /etc/vmware/pci.ids
+
+chmod u+w /usr/share/hwdata/pci.ids
+cp /usr/share/hwdata/pci.ids /usr/share/hwdata/pci.ids.0
+sed 's/1004  MT27500\/MT27520 Family \[ConnectX-3\/ConnectX-3 Pro Virtual Function\]/&\n                15b3 61b0  Mellanox Technologies Device/' /usr/share/hwdata/pci.ids > /usr/share/hwdata/pci.ids.0
+rm -f /usr/share/hwdata/pci.ids
+cp /usr/share/hwdata/pci.ids.0 /usr/share/hwdata/pci.ids
+
+chmod u+w /usr/share/hwdata/driver.pciids.d/mlx4_core.ids
+cp /usr/share/hwdata/driver.pciids.d/mlx4_core.ids /usr/share/hwdata/driver.pciids.d/mlx4_core.ids.0
+sed 's/1004  MT27500 Family \[ConnectX-3 Virtual Function\]/&\n                15b3 61b0  Mellanox Technologies Device/' /usr/share/hwdata/driver.pciids.d/mlx4_core.ids > /usr/share/hwdata/driver.pciids.d/mlx4_core.ids.0
+rm -f /usr/share/hwdata/driver.pciids.d/mlx4_core.ids
+cp /usr/share/hwdata/driver.pciids.d/mlx4_core.ids.0 /usr/share/hwdata/driver.pciids.d/mlx4_core.ids
+
+chmod u+w /usr/share/hwdata/default.pciids.d/nmlx4_core.ids
+cp /usr/share/hwdata/default.pciids.d/nmlx4_core.ids /usr/share/hwdata/default.pciids.d/nmlx4_core.ids.0
+sed 's/1004  MT27500\/MT27520 Family \[ConnectX-3\/ConnectX-3 Pro Virtual Function\]/&\n                15b3 61b0  Mellanox Technologies Device/' /usr/share/hwdata/default.pciids.d/nmlx4_core.ids > /usr/share/hwdata/default.pciids.d/nmlx4_core.ids.0
+rm -f /usr/share/hwdata/default.pciids.d/nmlx4_core.ids
+cp /usr/share/hwdata/default.pciids.d/nmlx4_core.ids.0 /usr/share/hwdata/default.pciids.d/nmlx4_core.ids
+
+chmod u+w /opt/mellanox/bin/mst
+cp /opt/mellanox/bin/mst /opt/mellanox/bin/mst.0
+sed "s/esxcli/localcli/" /opt/mellanox/bin/mst > /opt/mellanox/bin/mst.0
+rm -f /opt/mellanox/bin/mst
+cp /opt/mellanox/bin/mst.0 /opt/mellanox/bin/mst
+
+localcli system module set --enabled=true --module=nrdma
+localcli system module set --enabled=true --module=nrdma_vmkapi_shim
+localcli system module set --enabled=true --module=nmlx4_rdma
+localcli system module set --enabled=true --module=vmkapi_v2_3_0_0_rdma_shim
+localcli system module set --enabled=true --module=vrdma
+
+esxcfg-module -e nmst
+vmkload_mod -s nmst
+
+esxcfg-module -e ib_ipoib
+vmkload_mod -s ib_ipoib
+
+esxcfg-module -e mlx4_ib
+vmkload_mod -s mlx4_ib
+
+esxcfg-module -e ib_sa
+vmkload_mod -s ib_sa
+
+esxcfg-module -e ib_mad
+vmkload_mod -s ib_mad
+
+esxcfg-module -e ib_core
+vmkload_mod -s ib_core
+
+# esxcfg-module -e mlx_compat
+# vmkload_mod -s mlx_compat
+
+esxcfg-module -e ib_cm
+vmkload_mod -s ib_cm
+
+esxcfg-module -e ib_core
+vmkload_mod -s ib_core
+
+esxcfg-module -e ib_umad
+vmkload_mod -s ib_umad
+
+esxcfg-module -e memtrack
+vmkload_mod -s memtrack
+
+esxcfg-module -e ib_srp
+vmkload_mod -s ib_srp
+
+esxcfg-module -e mlx4_ib
+vmkload_mod -s mlx4_ib
+
+# esxcfg-module -e mlx4_core
+# vmkload_mod -s mlx4_core
+# esxcfg-module -e mlx4_en
+# vmkload_mod -s mlx4_en
+
+esxcfg-module -e nmlx4_core
+vmkload_mod -s nmlx4_core
+esxcfg-module -e nmlx4_rdma
+vmkload_mod -s nmlx4_rdma
+esxcfg-module -e nmlx4_en
+vmkload_mod -s nmlx4_en
+
+esxcfg-module -e iser
+vmkload_mod -s iser
+
+vmkload_mod nmlx4_core
+/opt/mellanox/bin/mst start
+
+localcli system snmp set --enable true
+/etc/init.d/snmpd start
+
+cd /var
+rm tmp
+mkdir ./tmp
+cd /
+/etc/init.d/sfcbd-watchdog restart
+
+# After running the commands above, vmwMgmtNode1 appears
+# [root@localhost:/dev] ls
+# PMemDisk                 generic                  tty
+# cbt                      genscsi                  tty1
+# cdp                      input                    tty2
+# cdrom                    iodm                     urandom
+# char                     keymap                   vdfm
+# cna                      klog                     vflash
+# console                  lacp                     vmwMgmtInfo
+# deltadisks               null                     vmwMgmtNode0
+# disks                    port                     vmwMgmtNode1 <----------------------- appears
+# dmesg                    ptmx                     vprobe
+# dvfilter-generic-vmware  random                   vsock
+# dvfiltertbl              sunrpc-gss               zero
+# dvsdev                   svm
+[# root@localhost:/dev]
+# 
+# /etc/vmware/pci.ids does not contain the Mellanox 1004 subsystem 15b3:61b0
+# 1004  MT27500/MT27520 Family [ConnectX-3/ConnectX-3 Pro Virtual Function]
+#       15b3 61b0  Mellanox Technologies Device       <----------------------- non existent, should be added
+# 1005  MT27510 Family
+# 
+
+
+
+
 
 # 5) Copying files
 # ----------------
