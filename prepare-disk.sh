@@ -207,19 +207,16 @@ partx $DEVICE
 # Step #4.4: mount and copy ESXi content to the data disk
 # -------------------------------------------------------
 cd /root
-VHDMOUNT=/vhdmount
+VHDMOUNT=/root/vhdmount
 mkdir $VHDMOUNT
 mount $DEVICE2 $VHDMOUNT
-mkdir $VHDMOUNT/efi
-mkdir $VHDMOUNT/[boot]
-mkdir $VHDMOUNT/upgrade
 
-ESXICD=/esxicd
+ESXICD=/root/esxicd
 mkdir $ESXICD
 
 # Copy ISO data including Bios syslinux
 mount -o loop ./$ISOFILENAME $ESXICD
-cp -R $ESXICD $VHDMOUNT/
+cp -R $ESXICD/* $VHDMOUNT
 
 
 # Step #4.5: Enable serial console redirection, add virtualization extension compatibility setting and add kickstart file
