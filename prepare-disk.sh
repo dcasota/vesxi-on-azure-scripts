@@ -97,10 +97,17 @@ cd ./mtools-4.0.23
 make
 make install
 
+
+# The installed ESXi must use the syslinux bootloader 3.86 to run legacy BIOS firmware. See https://docs.vmware.com/en/VMware-vSphere/6.7/vsphere-esxi-67-upgrade-guide.pdf S.21/S.52
+# To boot UEFI for an ESXi setup however, only syslinux 6.x supports UEFI.
 cd /root
-curl -O -J -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/3.xx/syslinux-3.86.tar.xz
-tar xf syslinux-3.86.tar.xz
-cd ./syslinux-3.86
+# curl -O -J -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/3.xx/syslinux-3.86.tar.xz
+# tar xf syslinux-3.86.tar.xz
+# cd ./syslinux-3.86
+curl -O -J -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/Testing/6.04/syslinux-6.04-pre1.tar.xz
+tar xf syslinux-6.04-pre1.tar.xz
+export SYSLINUXPATH="/root/syslinux-6.04-pre1"
+cd $SYSLINUXPATH
 make installer
 
 # Step #4.1: download an ESXi ISO
@@ -171,7 +178,7 @@ sfdisk --activate $DEVICE 2
 # add boot code to MBR
 dd \
 	bs=440 count=1 conv=notrunc \
-	if=/root/syslinux-3.86/mbr/gptmbr.bin \
+	if=$SYSLINUXPATH/mbr/gptmbr.bin \
 	of=$DEVICE
 	
 # backup MBR table
@@ -294,24 +301,22 @@ sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel text nofb /" $VHDMOUNT/
 # sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel ${LINE} /" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
 # setting for EFI
-cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
-cp $VHDMOUNT/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg
+cp $VHDMOUNT/efi/boot/boot.cfg $VHDMOUNT/efi/boot/boot.cfg.0
+cp $VHDMOUNT/boot.cfg $VHDMOUNT/efi/boot/boot.cfg
 
 
 # Step #4.6: install syslinux bootloader
 # --------------------------------------
-# ESXi uses Syslinux 3.86. See https://pubs.vmware.com/vsphere-50/index.jsp?topic=%2Fcom.vmware.vsphere.upgrade.doc_50%2FGUID-33C3E7D5-20D0-4F84-B2E3-5CD33D32EAA8.html
-# See https://www.virtuallyghetto.com/2019/07/automated-esxi-installation-to-usb-using-kickstart.html#comment-59753 "It's best to select MBR instead of GPT. I found when using GPT that it failed to find KS.CFG."
 
 # copy EFI64 syslinux
-cp $VHDMOUNT/EFI/boot/bootx64.efi $VHDMOUNT/mboot.efi
+cp $VHDMOUNT/efi/boot/bootx64.efi $VHDMOUNT/mboot.efi
 
 # copy these syslinux files as they are necessary for boot.cfg
 cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
 cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
 
-/root/syslinux-3.86/linux/syslinux $DEVICE2
-# cat ./mbr/mbr.bin > $DEVICE
+$SYSLINUXPATH/linux/syslinux $DEVICE2
+cat $SYSLINUXPATH/mbr/mbr.bin > $DEVICE
 
 # Step #4.7: power down the VM
 #-----------------------------
@@ -327,8 +332,8 @@ rm -r $VHDMOUNT
 
 rm -r ./mtools-4.0.23
 rm ./mtools-4.0.23.tar.gz
-rm -r ./syslinux-3.86
-rm syslinux-3.86.tar.xz
+rm -r $SYSLINUXPATH
+rm syslinux-6.04-pre1.tar.xz
 tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
 
 systemctl disable configurebootdisk.service
