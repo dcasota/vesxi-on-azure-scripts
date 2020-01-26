@@ -178,7 +178,7 @@ sfdisk --activate $DEVICE 2
 # add boot code to MBR
 dd \
 	bs=440 count=1 conv=notrunc \
-	if=$SYSLINUXPATH/mbr/gptmbr.bin \
+	if=$SYSLINUXPATH/bios/mbr/gptmbr.bin \
 	of=$DEVICE
 	
 # backup MBR table
@@ -315,8 +315,8 @@ cp $VHDMOUNT/efi/boot/bootx64.efi $VHDMOUNT/mboot.efi
 cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
 cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
 
-$SYSLINUXPATH/linux/syslinux $DEVICE2
-cat $SYSLINUXPATH/mbr/mbr.bin > $DEVICE
+$SYSLINUXPATH/bios/linux/syslinux $DEVICE2
+cat $SYSLINUXPATH/bios/mbr/mbr.bin > $DEVICE
 
 # Step #4.7: power down the VM
 #-----------------------------
