@@ -14,13 +14,13 @@
 #         In case of using a Google drive download link, uncomment the lines beginning with GOOGLEDRIVEFILEID=, insert your file id, and uncomment the lines beginning with GOOGLEDRIVEURL and wget --load-cookies.
 #    4.2. partition the attached data disk
 #    4.3. format the data disk as FAT32. Hence, some packages and mtools-4.0.23.tar.gz used are installed temporarily.
-#    4.4. install Syslinux bootlader 3.86 for ESXi on the data disk. syslinux-3.86.tar.xz is installed temporarily.
-#    4.5. mount and copy ESXi content to the data disk
-#    4.6. In the context of Azure, enabling serial console redirection becomes important. The two files syslinux.cfg and boot.cfg are modified to make run serial console for the setup phase of ESXi VM on Azure.
+#    4.4. mount and copy ESXi content to the data disk.
+#    4.5. In the context of Azure, enabling serial console redirection becomes important. The two files syslinux.cfg and boot.cfg are modified to make run serial console for the setup phase of ESXi VM on Azure.
 #         In addition, more compatibility settings to be passed in boot.cfg are necessary as the ESXi setup starts but fails with No Network Adapter.
 #         The integration of the detected network adapter Mellanox ConnectX-3 virtual function is unfinished.
 #         Mellanox ConnectX-3 [15b3:1004] driver support for VMware ESXi by VMware
 #         See https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc
+#    4.6. install Syslinux bootlader
 #    4.7. power down the VM
 # 
 #
@@ -145,16 +145,12 @@ wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download
 # Press [o] to create a new empty DOS partition table.
 # Press [n], [p] and press Enter 3 times to accept the default settings. This step creates a primary partition for you.
 # echo -e "o\nn\np\n1\n\n\nw" | fdisk $DEVICE
-# EFI
-# echo -e "n\n1\n\n\nw" | fdisk $DEVICE
 # configure an active and bootable FAT32 partition
 # Press [t] to toggle the partition file system type.
 # Press [c] to set the file system type to FAT32
 # Press [a] to make the partition active.
 # Press [w] to write the changes to disk.
 # echo -e "t\nc\nc\na\nw" | fdisk $DEVICE
-# EFI
-# echo -e "t\n1\nM\na\nw" | fdisk $DEVICE
 
 # https://gist.github.com/syzdek/ac4bb4ddc9414839474dbea64cdc5897
 # clear existing data
@@ -307,13 +303,12 @@ cp $VHDMOUNT/boot.cfg $VHDMOUNT/efi/boot/boot.cfg
 
 # Step #4.6: install syslinux bootloader
 # --------------------------------------
-
-# copy EFI64 syslinux
-cp $VHDMOUNT/efi/boot/bootx64.efi $VHDMOUNT/mboot.efi
-
 # copy these syslinux files as they are necessary for boot.cfg
 cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
 cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
+
+# copy EFI64 syslinux
+cp $VHDMOUNT/efi/boot/bootx64.efi $VHDMOUNT/mboot.efi
 
 $SYSLINUXPATH/bios/linux/syslinux $DEVICE2
 cat $SYSLINUXPATH/bios/mbr/mbr.bin > $DEVICE

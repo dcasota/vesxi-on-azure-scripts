@@ -154,7 +154,12 @@
 #                  2) Not 100% sure if ESXi UEFI boot is needed. In any case, early ESXi boot using in Bios does not show up any correlating dmesg ACPI message.
 #                     All the Mellanox ESXi ConnectX-3 adapters are native drivers.
 #                     As the Mellanox adapters DO show up on Photon OS, it has nothing to do with Azure Generation2-VM-sizes restrictions like Virtualization-based Security (VBS), Secure Boot, etc.
+#                  3) The Azure VM created is HyperVGeneration V1. Hence,
+#                        - The VHD to boot from is not UEFI-compatible
+#                        - Generation 2 doesn't support the boot method you want to use.
+#                        - Nothing new, an Azure ESXi guest operating system is not supported, see https://github.com/MicrosoftDocs/windowsserverdocs/blob/master/WindowsServerDocs/virtualization/hyper-v/plan/Should-I-create-a-generation-1-or-2-virtual-machine-in-Hyper-V.md
 #
+
 
 function create-AzVM-vESXi_usingPhotonOS{
    [cmdletbinding()]
