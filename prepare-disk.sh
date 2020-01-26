@@ -54,7 +54,7 @@ systemctl restart sshd
 # -------------------------------------------
 # On Azure the data disk resources might be presented as busy. A reboot is necessary to delete partitions successfully.
 export DEVICE="/dev/sdc"
-export DEVICE1="/dev/sdc1"
+export DEVICE1=${DEVICE}1
 export DEVICE2=${DEVICE}2
 export DEVICE3=${DEVICE}3
 
@@ -76,7 +76,6 @@ BASHFILE="/root/configure-bootdisk.sh"
 # create bash file to be processed after a reboot 
 cat > $BASHFILE <<'EOF'
 #!/bin/sh
-cd /root
 
 # INSERT YOUR ISOFILENAME HERE
 ISOFILENAME="ESXi65-customized.iso"
@@ -86,6 +85,22 @@ export DEVICE1="/dev/sdc1"
 
 
 tdnf install -y tar wget curl sed syslinux
+
+cd /root
+# First configure packages to make run Msdos tools for Linux
+tdnf install -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
+wget ftp://ftp.gnu.org/gnu/mtools/mtools-4.0.23.tar.gz
+tar -xzvf mtools-4.0.23.tar.gz
+cd ./mtools-4.0.23
+./configure --disable-floppyd
+make
+make install
+
+cd /root
+curl -O -J -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/3.xx/syslinux-3.86.tar.xz
+tar xf syslinux-3.86.tar.xz
+cd ./syslinux-3.86
+make installer
 
 # Step #4.1: download an ESXi ISO
 # -------------------------------
@@ -116,32 +131,76 @@ wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download
 # Step #4.2: partition the data disk attached
 # -------------------------------------------
 # Press [d] to delete any existing primary partition on data disk.
-echo -e "d\nw" | fdisk $DEVICE
+# echo -e "d\nw" | fdisk $DEVICE
 # create partition
 # Press [o] to create a new empty DOS partition table.
 # Press [n], [p] and press Enter 3 times to accept the default settings. This step creates a primary partition for you.
-echo -e "o\nn\np\n1\n\n\nw" | fdisk $DEVICE
+# echo -e "o\nn\np\n1\n\n\nw" | fdisk $DEVICE
+# EFI
+# echo -e "n\n1\n\n\nw" | fdisk $DEVICE
 # configure an active and bootable FAT32 partition
 # Press [t] to toggle the partition file system type.
 # Press [c] to set the file system type to FAT32
 # Press [a] to make the partition active.
 # Press [w] to write the changes to disk.
-echo -e "t\nc\nc\na\nw" | fdisk $DEVICE
+# echo -e "t\nc\nc\na\nw" | fdisk $DEVICE
+# EFI
+# echo -e "t\n1\nM\na\nw" | fdisk $DEVICE
+
+# https://gist.github.com/syzdek/ac4bb4ddc9414839474dbea64cdc5897
+# clear existing data
+sgdisk $DEVICE --zap-all
+
+# create 1st partition
+sgdisk $DEVICE --new=1:0:+1M
+sgdisk $DEVICE --typecode=1:EF02
+
+# create 2nd parition
+sgdisk $DEVICE --new=2:0:0
+sgdisk $DEVICE --typecode=2:0700
+
+# make hybrid
+sgdisk $DEVICE --hybrid=1:2
+
+# convert to MBR and activate partition 2
+sgdisk $DEVICE --zap
+sfdisk --activate $DEVICE 2
+
+# add boot code to MBR
+dd \
+	bs=440 count=1 conv=notrunc \
+	if=/syslinux-3.86/mbr/gptmbr.bin \
+	of=$DEVICE
+	
+# backup MBR table
+rm -f /tmp/mbr.backup
+dd bs=512 count=1 conv=notrunc \
+if=$DEVICE \
+of=/tmp/mbr.backup
+
+# convert back to GPT and adjust partition numbers
+sgdisk $DEVICE --mbrtogpt
+sgdisk $DEVICE --transpose=1:2
+sgdisk $DEVICE --transpose=2:3
+# re-adjust partition 2 information for GPT
+sgdisk $DEVICE --typecode=2:EF00
+sgdisk $DEVICE --change-name=2:"BootDisk"
+sgdisk $DEVICE --attributes=2:set:2
+# convert GPT to hybrid GPT
+sgdisk $DEVICE --hybrid=1:2
+# restore MBR with bootable partition 2
+dd bs=512 count=1 conv=notrunc \
+if=/tmp/mbr.backup \
+of=$DEVICE
+# refresh partition table in kernel memory
+partx $DEVICE
+
 
 
 # Step #4.3: format the data disk partition as FAT32
 # --------------------------------------------------
-cd /root
-# First configure packages to make run Msdos tools for Linux
-tdnf install -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
-wget ftp://ftp.gnu.org/gnu/mtools/mtools-4.0.23.tar.gz
-tar -xzvf mtools-4.0.23.tar.gz
-cd ./mtools-4.0.23
-./configure --disable-floppyd
-make
-make install
 # format
-/sbin/mkfs.vfat -F 32 -n ESXI $DEVICE1
+/sbin/mkfs.vfat -F 32 -n ESXI $DEVICE2
 # cleanup
 cd /root
 rm -r ./mtools-4.0.23
@@ -153,12 +212,8 @@ rm ./mtools-4.0.23.tar.gz
 # ESXi uses Syslinux 3.86. See https://pubs.vmware.com/vsphere-50/index.jsp?topic=%2Fcom.vmware.vsphere.upgrade.doc_50%2FGUID-33C3E7D5-20D0-4F84-B2E3-5CD33D32EAA8.html
 # See https://www.virtuallyghetto.com/2019/07/automated-esxi-installation-to-usb-using-kickstart.html#comment-59753 "It's best to select MBR instead of GPT. I found when using GPT that it failed to find KS.CFG."
 cd /root
-curl -O -J -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/3.xx/syslinux-3.86.tar.xz
-tar xf syslinux-3.86.tar.xz
-cd ./syslinux-3.86
-make installer
-./linux/syslinux $DEVICE1
-cat ./mbr/mbr.bin > $DEVICE
+/root/syslinux-3.86/linux/syslinux $DEVICE2
+# cat ./mbr/mbr.bin > $DEVICE
 # cleanup
 cd /root
 rm -r ./syslinux-3.86
@@ -171,7 +226,7 @@ tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc g
 cd /root
 VHDMOUNT=/vhdmount
 mkdir $VHDMOUNT
-mount $DEVICE1 $VHDMOUNT
+mount $DEVICE2 $VHDMOUNT
 ESXICD=/esxicd
 mkdir $ESXICD
 
