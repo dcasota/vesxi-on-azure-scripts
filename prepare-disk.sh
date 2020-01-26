@@ -82,6 +82,7 @@ ISOFILENAME="ESXi65-customized.iso"
 
 export DEVICE="/dev/sdc"
 export DEVICE1="/dev/sdc1"
+export DEVICE2="/dev/sdc2"
 
 
 tdnf install -y tar wget curl sed syslinux
@@ -104,6 +105,7 @@ make installer
 
 # Step #4.1: download an ESXi ISO
 # -------------------------------
+cd /root
 # Option #1: ESXi Customizer (UNFINISHED!)
 # tdnf install -y powershell
 # pwsh -c "install-module VMware.PowerCLI -force"
@@ -196,54 +198,31 @@ of=$DEVICE
 partx $DEVICE
 
 
-
 # Step #4.3: format the data disk partition as FAT32
 # --------------------------------------------------
 # format
-/sbin/mkfs.vfat -F 32 -n ESXI $DEVICE2
-# cleanup
-cd /root
-rm -r ./mtools-4.0.23
-rm ./mtools-4.0.23.tar.gz
+/sbin/mkfs.vfat -F 32 -n "BootDisk" $DEVICE2
 
 
-# Step #4.4: install syslinux bootloader
-# --------------------------------------
-# ESXi uses Syslinux 3.86. See https://pubs.vmware.com/vsphere-50/index.jsp?topic=%2Fcom.vmware.vsphere.upgrade.doc_50%2FGUID-33C3E7D5-20D0-4F84-B2E3-5CD33D32EAA8.html
-# See https://www.virtuallyghetto.com/2019/07/automated-esxi-installation-to-usb-using-kickstart.html#comment-59753 "It's best to select MBR instead of GPT. I found when using GPT that it failed to find KS.CFG."
-cd /root
-/root/syslinux-3.86/linux/syslinux $DEVICE2
-# cat ./mbr/mbr.bin > $DEVICE
-# cleanup
-cd /root
-rm -r ./syslinux-3.86
-rm syslinux-3.86.tar.xz
-tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
-
-
-# Step #4.5: mount and copy ESXi content to the data disk
+# Step #4.4: mount and copy ESXi content to the data disk
 # -------------------------------------------------------
 cd /root
 VHDMOUNT=/vhdmount
 mkdir $VHDMOUNT
 mount $DEVICE2 $VHDMOUNT
+mkdir $VHDMOUNT/efi
+mkdir $VHDMOUNT/[boot]
+mkdir $VHDMOUNT/upgrade
+
 ESXICD=/esxicd
 mkdir $ESXICD
 
-# Copy ISO data
+# Copy ISO data including Bios syslinux
 mount -o loop ./$ISOFILENAME $ESXICD
-cp -r $ESXICD/* $VHDMOUNT
+cp -R $ESXICD $VHDMOUNT/
 
-# copy these two syslinux files as they are necessary for boot.cfg
-cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
-cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
 
-# Cleanup
-umount $ESXICD
-rm -r $ESXICD
-rm ./$ISOFILENAME
-
-# Step #4.6: Enable serial console redirection, add virtualization extension compatibility setting and add kickstart file
+# Step #4.5: Enable serial console redirection, add virtualization extension compatibility setting and add kickstart file
 #------------------------------------------------------------------------------------------------------------------------
 # On Azure install ESXi via serial port, see weblinks about installing ESXi over serial console
 #    http://www.vmwareadmins.com/installing-esxi-serial-console-headless-video-card/ and
@@ -320,14 +299,41 @@ sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel text nofb /" $VHDMOUNT/
 # setting for EFI
 cp $VHDMOUNT/EFI/boot/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg.0
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/EFI/boot/boot.cfg
+
+
+# Step #4.6: install syslinux bootloader
+# --------------------------------------
+# ESXi uses Syslinux 3.86. See https://pubs.vmware.com/vsphere-50/index.jsp?topic=%2Fcom.vmware.vsphere.upgrade.doc_50%2FGUID-33C3E7D5-20D0-4F84-B2E3-5CD33D32EAA8.html
+# See https://www.virtuallyghetto.com/2019/07/automated-esxi-installation-to-usb-using-kickstart.html#comment-59753 "It's best to select MBR instead of GPT. I found when using GPT that it failed to find KS.CFG."
+
+# copy EFI64 syslinux
 cp $VHDMOUNT/EFI/boot/bootx64.efi $VHDMOUNT/mboot.efi
+
+# copy these syslinux files as they are necessary for boot.cfg
+cp /usr/share/syslinux/libcom32.c32 $VHDMOUNT/libcom32.c32
+cp /usr/share/syslinux/libutil.c32 $VHDMOUNT/libutil.c32
+
+/root/syslinux-3.86/linux/syslinux $DEVICE2
+# cat ./mbr/mbr.bin > $DEVICE
 
 # Step #4.7: power down the VM
 #-----------------------------
-#cleanup
+# Cleanup
+cd /root
+umount $ESXICD
+rm -r $ESXICD
+rm ./$ISOFILENAME
+
 cd /root
 umount $VHDMOUNT
 rm -r $VHDMOUNT
+
+rm -r ./mtools-4.0.23
+rm ./mtools-4.0.23.tar.gz
+rm -r ./syslinux-3.86
+rm syslinux-3.86.tar.xz
+tdnf remove -y dosfstools glibc-iconv autoconf automake binutils diffutils gcc glib-devel glibc-devel linux-api-headers make ncurses-devel util-linux-devel zlib-devel
+
 systemctl disable configurebootdisk.service
 rm /lib/systemd/system/multi-user.target.wants/configurebootdisk.service
 unlink /lib/systemd/system/configurebootdisk.service
