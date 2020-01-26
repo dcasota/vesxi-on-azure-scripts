@@ -171,7 +171,7 @@ sfdisk --activate $DEVICE 2
 # add boot code to MBR
 dd \
 	bs=440 count=1 conv=notrunc \
-	if=/syslinux-3.86/mbr/gptmbr.bin \
+	if=/root/syslinux-3.86/mbr/gptmbr.bin \
 	of=$DEVICE
 	
 # backup MBR table
@@ -186,7 +186,7 @@ sgdisk $DEVICE --transpose=1:2
 sgdisk $DEVICE --transpose=2:3
 # re-adjust partition 2 information for GPT
 sgdisk $DEVICE --typecode=2:EF00
-sgdisk $DEVICE --change-name=2:"BootDisk"
+sgdisk $DEVICE --change-name=2:"ESXIBOOT"
 sgdisk $DEVICE --attributes=2:set:2
 # convert GPT to hybrid GPT
 sgdisk $DEVICE --hybrid=1:2
@@ -201,7 +201,7 @@ partx $DEVICE
 # Step #4.3: format the data disk partition as FAT32
 # --------------------------------------------------
 # format
-/sbin/mkfs.vfat -F 32 -n "BootDisk" $DEVICE2
+/sbin/mkfs.vfat -F 32 -n "ESXIBOOT" $DEVICE2
 
 
 # Step #4.4: mount and copy ESXi content to the data disk
@@ -215,7 +215,7 @@ ESXICD=/root/esxicd
 mkdir $ESXICD
 
 # Copy ISO data including Bios syslinux
-mount -o loop ./$ISOFILENAME $ESXICD
+mount -o loop /root/$ISOFILENAME $ESXICD
 cp -R $ESXICD/* $VHDMOUNT
 
 
