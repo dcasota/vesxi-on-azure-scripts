@@ -22,22 +22,23 @@ This study work running an ESXi VM on top of Azure pursues the following goals:
 - document the findings. The mission of this cross-type-1-hypervisor nested lab is pushing the horizon view of my own to both worlds.
    
  The repo contains several scripts.
-  - ```create-AzVM-vESXi_usingPhotonOS.ps1```
+  - ```create-AzVM-vESXi_usingAzImage-PhotonOS.ps1```
   - ```prepare-disk.sh```
   - ```create-customizedESXi-iso.ps1```
   
- # ```create-AzVM-vESXi_usingPhotonOS.ps1```
-The Azure powershell script creates a VMware ESXi VM on Microsoft Azure. The hardware used is a Standard_DS3_v2 offering.
+ # ```create-AzVM-vESXi_usingPhotonOS.ps1```,```create-AzVM-vESXi_usingLocalFile-PhotonOS.ps1```
+The Azure powershell script creates a VMware ESXi VM on Microsoft Azure. The hardware used is a Standard_E4s_v3 offering.
 An ESXi VM offering on Azure must support:
 - Accelerated Networking. Without acceleratednetworking, network adapters are not presented to the ESXi VM.
 - Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it in a VM.
 
 VMware Photon OS is installed first as some sort of helper-OS for the ESXi boot medium preparation. VMware Photon OS is a tiny IoT cloud os. See https://vmware.github.io/photon/.
 The VMware Linux-distro is delivered in several disk formats. The script uses the Azure .vhd Photon OS 3.0rev2 release. It is important to know that actually (December 2019), .vhd is still the only Azure supported interoperability disk format. See .vhd limitations https://docs.microsoft.com/en-us/azure/virtual-machines/windows/generation-2#features-and-capabilities. Keep that in mind when running some tests.
+```create-AzVM-vESXi_usingPhotonOS.ps1``` uses an existing Az image, ```create-AzVM-vESXi_usingLocalFile-PhotonOS.ps1``` uses a local .vhd file of VMware Photon OS.
 
 VMware ESXi usually is delivered as an ISO file. An Azure VM cannot attach an ISO like VMware vSphere. In my studies so far the simplest solution make run ESXi is creating the VM with temporary installed VMware Photon OS. In short: from the VMware Photon OS .vhd, the Azure VM is created using it as osdisk as well as an attached data disk. The data disk is installed with the ISO bits of ESXi. Then, the disks are switched and ESXi boots from the prepared data disk. During ESXi setup, you select the second disk as installation disk, and detach the .vhdified ISO after ESXi setup.
 
-The script processes following steps:
+The script ```create-AzVM-vESXi_usingLocalFile-PhotonOS.ps1``` processes following steps:
  1. Check prerequisites and Azure login
  2. create a resource group and storage container
  3. upload the Photon OS .vhd as page blob
@@ -57,10 +58,10 @@ The script processes following steps:
 
 Hint: The helper script ```set-AzVMboot-PhotonOS.ps1```switches os disk from ESXi to Photon OS (and ```set-AzVMboot-ESXi.ps1``` does vice versa).
  
-# ```prepare-disk.sh```
+# ```prepare-disk-bios.sh```,```prepare-disk-efi.sh```
 The bash script configures an attached data disk as ESXi bootable medium. It must run on VMware Photon OS. And you have to enter your location of the ESXi ISO medium. See comments inside the script. The script processes following steps:
 
-  1. Configure sshd. Use the LocalAdminUser credentials specified in ```create-AzVM-vESXi_usingPhotonOS.ps1``` for ssh login.
+  1. Configure sshd. Use the LocalAdminUser credentials specified for ssh login.
 
   2. delete partitions on the data disk.
      Comment: In the context of Azure page blob only the data disk .vhd (conectix) header is needed for creating a bootable disk.
