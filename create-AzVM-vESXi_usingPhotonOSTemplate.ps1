@@ -1,7 +1,8 @@
 ﻿#
 # Create a VMware ESXi Virtual Machine on a Microsoft Azure offering
 #
-# The script creates a VM, temporary with VMware Photon OS. An attached data disk is used for the installation bits of VMware ESXi. The prepared data disk then is promoted as OS disk.
+# The script creates a Generation V2 VM, temporary with VMware Photon OS. VMware Photon OS is provisioned using a preconfigured Azure image.
+# An attached data disk is used for the installation bits of VMware ESXi. The prepared data disk then is promoted as OS disk.
 #
 # USE THE SCRIPT IT AT YOUR OWN RISK! If you run into issues, give up or try to fix it on your own support. Nested VMware ESXi on Azure is NOT OFFICIALLY SUPPORTED.
 # 
@@ -11,9 +12,8 @@
 #
 # Prerequisites:
 #    - Microsoft Powershell, Microsoft Azure Powershell, Microsoft Azure CLI
-#    - must run in an elevated powershell session
-#    - VMware Photon OS 3.0 .vhd image
 #    - Azure account
+#    - Azure image with VMware Photon OS. The creation of the Azure image may be accomplished using create-AzImage_GenV2-PhotonOS.ps1.
 #
 #
 # Parameter LocalFilePath
@@ -165,9 +165,7 @@ function create-AzVM-vESXi_usingPhotonOS{
    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        # Local file path of unzipped Photon OS 3.0 GA .vhd from http://dl.bintray.com/vmware/photon/3.0/GA/azure/photon-azure-3.0-26156e2.vhd.tar.gz
-        # Local file path of unzipped Photon OS 3.0 rev2 .vhd from http://dl.bintray.com/vmware/photon/3.0/Rev2/azure/photon-azure-3.0-9355405.vhd.tar.gz
-        $LocalFilePath="J:\photon-azure-3.0-9355405.vhd.tar\photon-azure-3.0-9355405.vhd",
+        $Imagename="photon-azure-3.0-9355405",
 
         [Parameter(Mandatory = $false)]
         [ValidateNotNull()]
@@ -175,16 +173,13 @@ function create-AzVM-vESXi_usingPhotonOS{
         [System.Management.Automation.Credential()]$cred = (Get-credential -message 'Enter a username and password for the Azure login.'),	
 
         [Parameter(Mandatory = $false)]
-        [ValidateSet('eastus','westus','westeurope')]
-        [String]$LocationName="westus",
+        [ValidateSet('eastus','westus','westeurope','switzerlandnorth')]
+        [String]$LocationName="switzerlandnorth",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$ResourceGroupName="photonos-lab-rg",
 
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$StorageAccountName="photonos$(Get-Random)",
-		# Photon OS Image Blob name
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$BlobName= (split-path $LocalFilePath -leaf) ,
+        [String]$StorageAccountName="photonoslab",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$ContainerName="disks",
 
@@ -230,20 +225,18 @@ function create-AzVM-vESXi_usingPhotonOS{
         [System.Management.Automation.Credential()]$VMLocalcred = (Get-credential -message 'Enter username and password for the VM user account to be created locally. Password must be 7-12 characters. Username must be all in small letters.'),	        	
    		
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$BashfileName="prepare-disk-bios.sh"	# or prepare-disk-efi.sh	
+        [String]$BashfileName="prepare-disk-bios.sh" # or prepare-disk-efi.sh		
     )
 
-# Step #1: Check prerequisites and Azure login
-# --------------------------------------------
-# check if .vhd exists
-if (!(Test-Path $LocalFilePath)) {break}
-
-# check Azure CLI
-az help 1>$null 2>$null
-if ($lastexitcode -ne 0) {break}
+## check Azure CLI
+if (-not ($($env:path).contains("CLI2\wbin")))
+{
+    Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'
+    $env:path="C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin;"+$env:path
+}
 
 # check Azure Powershell
-if (([string]::IsNullOrEmpty((get-module -name Az* -listavailable)))) {break}
+if (([string]::IsNullOrEmpty((get-module -name Az* -listavailable)))) {install-module Az -force -ErrorAction SilentlyContinue}
 
 # Azure login
 connect-Azaccount -Credential $cred
@@ -254,13 +247,6 @@ $subscriptionId=($azcontext).Subscription.Id
 # set subscription
 az account set --subscription $subscriptionId
 
-# Verify VM doesn't exist
-[Microsoft.Azure.Commands.Compute.Models.PSVirtualMachine] `
-$VM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName -ErrorAction SilentlyContinue
-if (-not ([Object]::ReferenceEquals($VM,$null))) { return }
-
-# Step #2: create a resource group and storage container
-# ------------------------------------------------------
 # create lab resource group if it does not exist
 $result = get-azresourcegroup -name $ResourceGroupName -Location $LocationName -ErrorAction SilentlyContinue
 if (-not ($result))
@@ -268,13 +254,16 @@ if (-not ($result))
     New-AzResourceGroup -Name $ResourceGroupName -Location $LocationName
 }
 
+$ImageId=(get-azimage -ResourceGroupName $ResourceGroupName -ImageName $ImageName).Id
+if (-not ($ImageId)) {break}
+
 $storageaccount=get-azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction SilentlyContinue
 if (-not ($storageaccount))
 {
     New-AzStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -Location $LocationName -Kind Storage -SkuName Standard_LRS -ErrorAction SilentlyContinue
 }
+do {sleep -Milliseconds 1000} until ($((get-azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName).ProvisioningState) -ieq "Succeeded") 
 $storageaccountkey=(get-azstorageaccountkey -ResourceGroupName $ResourceGroupName -name $StorageAccountName)
-
 
 $result=az storage container exists --account-name $storageaccountname --name ${ContainerName} | convertfrom-json
 if ($result.exists -eq $false)
@@ -283,25 +272,6 @@ if ($result.exists -eq $false)
         az storage container create --name ${ContainerName} --public-access blob --account-name $StorageAccountName --account-key ($storageaccountkey[0]).value
     } catch{}
 }
-
-# Step #3: upload the Photon OS .vhd as page blob
-# -----------------------------------------------
-$urlOfUploadedVhd = "https://${StorageAccountName}.blob.core.windows.net/${ContainerName}/${BlobName}"
-$result=az storage blob exists --account-key ($storageaccountkey[0]).value --account-name $StorageAccountName --container-name ${ContainerName} --name ${BlobName} | convertfrom-json
-if ($result.exists -eq $false)
-{
-    try {
-    az storage blob upload --account-name $StorageAccountName `
-    --account-key ($storageaccountkey[0]).value `
-    --container-name ${ContainerName} `
-    --type page `
-    --file $LocalFilePath `
-    --name ${BlobName}
-    } catch{}
-}
-
-# Step #4: create virtual network and security group
-# --------------------------------------------------
 
 # networksecurityruleconfig, UNFINISHED as VMware ESXi ports must be included
 $nsg=get-AzNetworkSecurityGroup -Name $nsgName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
@@ -370,39 +340,41 @@ if (-not ($nic2))
 }
 
 
-# Step #6: create the vm with Photon OS as os disk an a data disk processed with cloud-init custom data from $Bashfilename 
-# ------------------------------------------------------------------------------------------------------------------------
-# save and reapply location info because 'az vm create --custom-data' fails using a filename not in current path
-$locationstack=get-location
-set-location -Path ${PSScriptRoot}
+# Verify VM doesn't exist
+[Microsoft.Azure.Commands.Compute.Models.PSVirtualMachine]$VM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName -ErrorAction SilentlyContinue
+if (-not ($VM))
+{
+	# save and reapply location info because 'az vm create --custom-data' fails using a filename not in current path
+	$locationstack=get-location
+	set-location -Path ${PSScriptRoot}
 
-$VMLocalAdminUser=$VMLocalcred.GetNetworkCredential().username
-$VMLocalAdminPassword=$VMLocalcred.GetNetworkCredential().password
+	$VMLocalAdminUser=$VMLocalcred.GetNetworkCredential().username
+	$VMLocalAdminPassword=$VMLocalcred.GetNetworkCredential().password
+	
+    $diskConfig = New-AzDiskConfig -AccountType 'Standard_LRS' -Location $LocationName -HyperVGeneration "V2" -CreateOption Empty -DiskSizeGB ${diskSizeGB} -OSType Linux
+    New-AzDisk -Disk $diskConfig -ResourceGroupName $resourceGroupName -DiskName $ESXiDiskName
 
-# az vm create with custom-data
-try {
+    # az vm create with custom-data
+    try {
 	az vm create --resource-group ${ResourceGroupName} --location ${LocationName} --name ${vmName} `
 	--size ${VMSize} `
 	--admin-username ${VMLocalAdminUser} --admin-password ${VMLocalAdminPassword} `
-	--storage-account ${StorageAccountName} `
-	--storage-container-name ${ContainerName} `
-	--os-type linux `
-	--use-unmanaged-disk `
 	--os-disk-size-gb ${diskSizeGB} `
-	--image ${urlOfUploadedVhd} `
-	--attach-data-disks ${urlOfUploadedVhd} `
+    --attach-data-disks $ESXiDiskName `
+	--image ${ImageName} `
 	--computer-name ${computerName} `
 	--nics ${NICName1} ${NicName2} `
 	--custom-data ${Bashfilename} `
 	--generate-ssh-keys `
 	--boot-diagnostics-storage "https://${StorageAccountName}.blob.core.windows.net"
-} catch {}
+    } catch {}
 
-set-location -path $locationstack
+    $VM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName
+    Set-AzVMBootDiagnostic -VM $VM -Enable -ResourceGroupName $ResourceGroupName -StorageAccountName $StorageAccountName
 
+	set-location -path $locationstack
+    }
 
-# Step #7: convert the disks created to managed disks, detach and re-attach the bootable ESXi data disk as os disk. Afterwards the VM is started.
-# -----------------------------------------------------------------------------------------------------------------------------------------------
 # The VM is configured through custom-data to automatically power down. Wait for PowerState/stopped.
 $Timeout = 1800
 $i = 0
@@ -412,37 +384,26 @@ for ($i=0;$i -lt $Timeout; $i++) {
     Write-Progress -Activity 'Provisioning' -Status "Provisioning in progress ..." -PercentComplete $percentComplete
     $objVM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $vmName -status -ErrorAction SilentlyContinue
 	if (-not ([Object]::ReferenceEquals($objVM,$null))) {
-        if (((($objVM).Statuses[1]).Code) -ceq "PowerState/stopped") { 
-		    # shutdown VM and deallocate it for the conversion to managed disks
-		    Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
-		    # Convert to managed disks https://docs.microsoft.com/en-us/azure/virtual-machines/windows/convert-unmanaged-to-managed-disks
-		    ConvertTo-AzVMManagedDisk -ResourceGroupName $ResourceGroupName -VMName $vmName
-		    # Starts VM automatically
-			
-			# Do interactively login to Photon OS you may uncomment 'pause' and break the setup here.
-			#    Use the specified local VM user account credentials. To sudo to root run 'sudo passwd -u root', enter a new password with 'sudo passwd root', and root login with 'su -l root'.
-			# pause
-
+        if (((($objVM).Statuses[1]).Code) -ceq "PowerState/stopped") { 		
 		    # Make sure the VM is stopped but not deallocated so you can detach/attach disk
 		    Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
+            # Save Photon OS Disk name
+		    $PhotonDiskName=(get-azvm -ResourceGroupName $resourceGroupName -Name $vmName).StorageProfile.OSdisk.Name
 		    # Detach the prepared data disk
-		    $SourceDiskName=(Get-AzDisk -ResourceGroupName $resourceGroupName | Select Name).Name[1]
-		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
 		    $virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
-		    Remove-AzVMDataDisk -VM $VirtualMachine -Name $SourceDiskName
+		    Remove-AzVMDataDisk -VM $VirtualMachine -Name $ESXiDiskName
 		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
 		    # Set the prepared data disk as os disk
-		    $virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmname
-		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
-		    Set-AzVMOSDisk -VM $virtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name
-		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
+		    $VirtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $ESXiDiskName
+		    Set-AzVMOSDisk -VM $VirtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name
+		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $VirtualMachine
 
-            # Detach Photon OS disk
+            # Attach Photon OS disk as second disk
             Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
-		    $SourceDiskName=(Get-AzDisk -ResourceGroupName $resourceGroupName | Select Name).Name[0]
-		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
-		    $virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
-		    Remove-AzVMDataDisk -VM $VirtualMachine -Name $SourceDiskName
+		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $PhotonDiskName
+		    $VirtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+		    Add-AzVMDataDisk -VM $virtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name -Lun 0 -CreateOption Attach
 		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
 
 		    Start-AzVM -ResourceGroupName $resourceGroupName -Name $vmName
