@@ -52,12 +52,13 @@ systemctl restart sshd
 
 # Step #2: delete partitions on the data disk
 # -------------------------------------------
-# On Azure the data disk resources might be presented as busy. A reboot is necessary to delete partitions successfully.
-export DEVICE="/dev/sdc"
-export DEVICE1="/dev/sdc1"
+# find last attached device using fdisk (must be in GiB)
+export DEVICE=$(echo `fdisk -l | awk '$4 ~ /GiB/ { print $2 }'| sed 's/://' | tail -1`)
+export DEVICE1=${DEVICE}1
 export DEVICE2=${DEVICE}2
 export DEVICE3=${DEVICE}3
 
+# On Azure the data disk resources might be presented as busy. A reboot is necessary to delete partitions successfully.
 if grep $DEVICE3 /etc/mtab > /dev/null 2>&1; then
     umount $DEVICE3
 fi
@@ -81,9 +82,9 @@ cd /root
 # INSERT YOUR ISOFILENAME HERE
 ISOFILENAME="ESXi65-customized.iso"
 
-export DEVICE="/dev/sdc"
-export DEVICE1="/dev/sdc1"
-
+# find last attached device using fdisk (must be in GiB)
+export DEVICE=$(echo `fdisk -l | awk '$4 ~ /GiB/ { print $2 }'| sed 's/://' | tail -1`)
+export DEVICE1=${DEVICE}1
 
 tdnf install -y tar wget curl sed syslinux
 
@@ -253,7 +254,7 @@ cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
 #       - runweasel text nofb
 #       - preferVmklinux=TRUE
 #       - iovDisableIR=TRUE
-sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel text nofb /" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+sed "s/kernelopt=cdromBoot runweasel/kernelopt=runweasel text nofb /" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
 #    apply setting B)
 #       - runweasel, add ks.cfg
