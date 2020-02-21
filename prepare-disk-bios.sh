@@ -215,7 +215,7 @@ cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 #       - Redirect tty1Port=com1 to serial port com1
 #       - parameters text nofb
 #       As result the setup boots into ESXi Shell
-sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none iovDisableIR=TRUE/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 
 #    apply setting B)
 #       - Redirect tty2port to serial port com1
@@ -252,9 +252,7 @@ sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbP
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
 #    apply setting A)
 #       - runweasel text nofb
-#       - preferVmklinux=TRUE
-#       - iovDisableIR=TRUE
-sed "s/kernelopt=cdromBoot runweasel/kernelopt=runweasel text nofb /" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+sed "s/kernelopt=cdromBoot runweasel/kernelopt=runweasel text nofb/" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
 #    apply setting B)
 #       - runweasel, add ks.cfg
