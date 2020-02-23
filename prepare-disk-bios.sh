@@ -45,15 +45,14 @@ cd /root
 systemctl stop sshd
 sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-
 systemctl enable sshd
 systemctl restart sshd
 
 
 # Step #2: delete partitions on the data disk
 # -------------------------------------------
-# find last attached device using fdisk (must be in GiB)
-export DEVICE=$(echo `fdisk -l | awk '$4 ~ /GiB/ { print $2 }'| sed 's/://' | tail -1`)
+# find last attached device using fdisk (must be in GiB) HARDCODED to "16" GiB
+export DEVICE=$(echo `fdisk -l | awk '$3 ~ /16/ { print $2 }'| sed 's/://' | tail -1`)
 export DEVICE1=${DEVICE}1
 export DEVICE2=${DEVICE}2
 export DEVICE3=${DEVICE}3
@@ -61,15 +60,19 @@ export DEVICE3=${DEVICE}3
 # On Azure the data disk resources might be presented as busy. A reboot is necessary to delete partitions successfully.
 if grep $DEVICE3 /etc/mtab > /dev/null 2>&1; then
     umount $DEVICE3
+	# clear existing data
+	echo -e "d\n3\nw" | fdisk $DEVICE	
 fi
 if grep $DEVICE2 /etc/mtab > /dev/null 2>&1; then
     umount $DEVICE2
+	# Press [d] to delete existing partitions.
+	echo -e "d\n2\nw" | fdisk $DEVICE	
 fi
 if grep $DEVICE1 /etc/mtab > /dev/null 2>&1; then
     umount $DEVICE1
+	# Press [d] to delete existing partitions.
+	echo -e "d\n1\nw" | fdisk $DEVICE	
 fi
-# Press [d] to delete existing partitions. d 1 d 2 d
-echo -e "d\n1\nd\n2\nd\nw" | fdisk $DEVICE
 
 # Step #3: dynamically create a bash file to be scheduled once as configurebootdisk.service after a reboot
 # --------------------------------------------------------------------------------------------------------
@@ -83,8 +86,10 @@ cd /root
 ISOFILENAME="ESXi65-customized.iso"
 
 # find last attached device using fdisk (must be in GiB)
-export DEVICE=$(echo `fdisk -l | awk '$4 ~ /GiB/ { print $2 }'| sed 's/://' | tail -1`)
+export DEVICE=$(echo `fdisk -l | awk '$3 ~ /16/ { print $2 }'| sed 's/://' | tail -1`)
 export DEVICE1=${DEVICE}1
+export DEVICE2=${DEVICE}2
+export DEVICE3=${DEVICE}3
 
 tdnf install -y tar wget curl sed syslinux
 

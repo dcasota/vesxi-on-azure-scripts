@@ -52,12 +52,13 @@ systemctl restart sshd
 
 # Step #2: delete partitions on the data disk
 # -------------------------------------------
-# On Azure the data disk resources might be presented as busy. A reboot is necessary to delete partitions successfully.
-export DEVICE="/dev/sdc"
+# find last attached device using fdisk (must be in GiB) HARDCODED to "16" GiB
+export DEVICE=$(echo `fdisk -l | awk '$3 ~ /16/ { print $2 }'| sed 's/://' | tail -1`)
 export DEVICE1=${DEVICE}1
 export DEVICE2=${DEVICE}2
 export DEVICE3=${DEVICE}3
 
+# On Azure the data disk resources might be presented as busy. A reboot is necessary to delete partitions successfully.
 if grep $DEVICE3 /etc/mtab > /dev/null 2>&1; then
     umount $DEVICE3
 fi
@@ -80,10 +81,10 @@ cat > $BASHFILE <<'EOF'
 # INSERT YOUR ISOFILENAME HERE
 ISOFILENAME="ESXi65-customized.iso"
 
-export DEVICE="/dev/sdc"
-export DEVICE1="/dev/sdc1"
-export DEVICE2="/dev/sdc2"
-
+# find last attached device using fdisk (must be in GiB) HARDCODED to "16" GiB
+export DEVICE=$(echo `fdisk -l | awk '$3 ~ /16/ { print $2 }'| sed 's/://' | tail -1`)
+export DEVICE1=${DEVICE}1
+export DEVICE2=${DEVICE}2
 
 tdnf install -y tar wget curl sed syslinux
 
@@ -248,7 +249,7 @@ cp $VHDMOUNT/syslinux.cfg $VHDMOUNT/syslinux.cfg.0
 #       - Redirect tty1Port=com1 to serial port com1
 #       - parameters text nofb
 #       As result the setup boots into ESXi Shell
-sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none iovDisableIR=TRUE/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
+sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none/" $VHDMOUNT/syslinux.cfg.0 > $VHDMOUNT/syslinux.cfg
 
 #    apply setting B)
 #       - Redirect tty2port to serial port com1
@@ -285,9 +286,7 @@ sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbP
 cp $VHDMOUNT/boot.cfg $VHDMOUNT/boot.cfg.0
 #    apply setting A)
 #       - runweasel text nofb
-#       - preferVmklinux=TRUE
-#       - iovDisableIR=TRUE
-sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel text nofb /" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
+sed "s/kernelopt=cdromBoot runweasel/kernelopt=runweasel text nofb/" $VHDMOUNT/boot.cfg.0 > $VHDMOUNT/boot.cfg
 
 #    apply setting B)
 #       - runweasel, add ks.cfg
