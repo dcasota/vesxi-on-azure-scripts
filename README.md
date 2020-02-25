@@ -114,7 +114,7 @@ The ESXi setup starts but fails with No Network Adapter found. Some efforts are 
 
 ## ```create-customizedESXi-iso.ps1```
 The powershell script creates a customized ESXi ISO with Mellanox adapter driver.
-It downloads the ESXi image using the ESXi-Customizer from v-front.de, removes all builtin Mellanox drivers as for ESXi 6.0, 6.5 and 6.7 out-of-the-box it does not work yet for a target Azure hardware offering. The script is configured to process an ESXi 6.5 image, hence, it adds specific offline bundles (see https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc) and cim modules, and creates the iso.
+It downloads the ESXi image using the ESXi-Customizer from www.v-front.de, removes all builtin Mellanox drivers as for ESXi 6.0, 6.5 and 6.7 out-of-the-box it does not work yet for a target Azure hardware offering. The script is configured to process an ESXi 6.5 image, hence, it adds specific offline bundles (see https://www.vmware.com/resources/compatibility/detail.php?deviceCategory=io&productid=35390&deviceCategory=io&details=1&partner=55&deviceTypes=6&VID=15b3&DID=1004&page=1&display_interval=10&sortColumn=Partner&sortOrder=Asc) and cim modules, and creates the iso.
 
 
 Suggestions and issues discussions about the homelab project are welcome.
