@@ -3,35 +3,7 @@
 ![ESXi67](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXi67.png)
 
 This lab project contains scripts for provisioning VMware ESXi as Microsoft Azure VM in the future.
- 
-# Why are people running their stuff in a nested virtualization lab? 
-VMware ESXi, the cloud provider- and onpremise datacenter type-1-hypervisor for many guest OS has been established for more than fifteen years. As a VMware enthusiast simply put I love plan, do and run datacenter infrastructure. On the same side, reliability, scalability, performance for compute resources is a main topic on Microsoft Azure and its Hyper-V type-1 hypervisor, too.
-
-If you want to go for more hypervisor software learning, and without the need to spec, order, rack, stack, cable, image and deploy hardware, nested hypervisor labs could be a useful addition, but, it is not officially supported. See
-  - https://kb.vmware.com/s/article/2009916
-  - https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization
-  
-Automation&Integration engineers often use nested hypervisor labs to test their kickstart/setup/configuration scripts without the need of tests always allocating own realworld physical hardware. That said, keep in mind the operational economy radius of realworld physical hardware. It doesn't end with nested hypervisors: There is degraded value of running compute resources in a nested virtualization environment only.
-
-Realworld physical hardware is a key point in a 'type-1 hypervisor running in a VM on top of a type-1 hypervisor' scenario. Some nested hypervisor configurations are technically possible. If you run into issues with a nested lab, give up or try to fix it on your own support. 
-
-This study work running an ESXi VM on top of Azure pursues the following goals:
-- learn back-to-the-basics in pairs. As example, if you newly learned how to create from an ISO a .vhd data disk, try to find similarities to previous achievements of making a bootable usb medium. 
-- pay more attention to interoperability and capabilities history. As example, disk formats like .vhd or .vhdx (conectix/Microsoft), .vmdk or .ova (VMware) or .vdi (Oracle) offer vendor specific benefits. There is no common cloud interchange disk format, but it became easier to export a disk as different formats.
-- code Microsoft Azure VM and VMware ESXi setup or kickstart scripts step by step. Be pragmatic with findings from user interface interactions or results.
-- document the findings. The mission of this cross-type-1-hypervisor nested lab is pushing the horizon view of my own to both worlds.
-
-# Work in progress
-- Does this ESXi-setup-in-an-Azure-VM work? No.
-- Are you working on this? Yes. It's some sort of a homelab project.
-- What hardware are you using? The hardware actually used is an Azure Standard_E4s_v3 offering. A Standard_E4s_v3 offering includes a Hyper-V biased Virtual Machine with 4 vCPU, 32 GB RAM, accelerated networking and with premium disk support.
-- What digital Bios is used? Microsoft's Hyper-V uses the American Megatrends Inc. Bios for VMs. In Azure it is not possible to access the Bios and the digital motherboard like a VMware vSphere VM. There is no Esc or Del key. In relation to boot, disk controllers or other Bios features, VMs running on-premises have some features that aren't supported in Azure. An Azure VM as example cannot attach an ISO like a VMware vSphere VM. Most of the culprits are listed here https://docs.microsoft.com/en-us/azure/virtual-machines/windows/generation-2.
-- What virtual hardware components are used? ESXi requires a VMhost with at least two CPU cores, x86 processor, 4 GB RAM, and supported storage and ethernet controllers. There is no Azure Marketplace image for ESXi, but, a provisioned Azure VMware Photon OS VM with enabled accelerated networking works like a charm, and exposes the network adapter Mellanox ConnectX-3 virtual function as the VM its digital device. Lack of network interoperability is the main reason the ESXi setup does not work yet.
-- Why do you use VMware Photon OS? In my studies so far the simplest solution make begin provisioning ESXi on Azure is creating the VM with temporary installed VMware Photon OS. VMware Photon OS is a tiny IoT cloud OS. See https://vmware.github.io/photon/. In short: from the VMware Photon OS .vhd, the Azure VM is created using it as osdisk as well as an attached data disk. The data disk is installed with the ISO bits of ESXi. Then, the disks are switched and ESXi boots from the prepared data disk. During ESXi setup, you select the second disk as installation disk, and detach the .vhdified ISO after ESXi setup.
-- Does the Azure VMware Photon OS setup work? Yes. The VMware Linux-distro is delivered in several disk formats. It is important to know that actually (December 2019), .vhd is still the only Azure supported interoperability disk format. See .vhd limitations https://docs.microsoft.com/en-us/azure/virtual-machines/windows/generation-2#features-and-capabilities. The scripts ```create-AzImage-PhotonOS.ps1``` and ```create-AzVM-vESXi_usingAzImage-PhotonOS.ps1``` uses the Photon OS 3.0rev2 Azure .vhd release. But some earlier setups with Photon OS 2.0 and 3.0 as Azure VM were successfully too.
-- How does the driver integration of the network adapter Mellanox ConnectX-3 virtual function in Photon OS and in ESXi differ? Photon OS is a native 64bit OS. On the ESXi setup Shell phase, the two Mellanox nic adapters are not listed through 'lspci'. As the two Mellanox adapters DO show up on Photon OS, it has nothing to do with Azure Generation2-VM-sizes restrictions like Virtualization-based Security (VBS), Secure Boot, etc. The subsystem 15b3:61b0 from the lspci output on Photon OS is not listed in /etc/vmware/pci.ids. So far, none of the adapter drivers includes the PCI ID '15b3:61b0 Mellanox Technologies Device'. Additional findings are documented in 'Findings ESXi Shell about Virtual Machine Hardware.txt'. 'DMA IB RoCE iWARP.txt' is a beginner help about RDMA and Infiniband technology to get start reading docs like  http://www.mellanox.com/related-docs/prod_software/Mellanox_Native_ESX_Driver_for_VMware_vSphere_6.5_User_Manual_v3.16.11.10.pdf.
-Not 100% sure if additionally ESXi UEFI boot is needed. In any case, early ESXi boot using in Bios does not show up any correlating dmesg ACPI message. But, the Mellanox ESXi ConnectX-3 adapter releases are native drivers.
-
+See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
 
   
 # Automated provisioning of an Azure ESXi VM 
