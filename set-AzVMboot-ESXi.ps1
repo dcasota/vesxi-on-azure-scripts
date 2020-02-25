@@ -20,26 +20,45 @@ function set-AzVMboot-ESXi{
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         $vmname="photonos",
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        $resourcegroupname="photonos-lab-rg"
-
+        $resourcegroupname="photonos-lab-rg",
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        $AzVMOSDiskPrefix="photonos",
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        $AzVMDataDiskPrefix="ESX"
     )
 
     $azcontext=get-azcontext
-    if( -not $($azcontext) ) { return }   
+    if( -not $($azcontext) ) {
+        $cred = (Get-credential -message 'Enter a username and password for the Azure login.')
+        connect-Azaccount -Credential $cred
+    }   
 
     Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
-    # Detach the prepared data disk
-    $SourceDiskName=(Get-AzDisk -ResourceGroupName $resourceGroupName | Select Name).Name[1]
-    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
-    $virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
-    Remove-AzVMDataDisk -VM $VirtualMachine -Name $SourceDiskName
+	# Detach the ESX disk  
+	$SourceDiskName=((Get-AzDisk -ResourceGroupName $resourceGroupName | Where-Object {$_.name -ilike "$AzVMDataDiskPrefix*"})[0] | Select Name).Name
+	$sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
+	$virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+	Remove-AzVMDataDisk -VM $VirtualMachine -Name $SourceDiskName
+	Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
+	# Set the ESX disk as os disk
+	$virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmname
+	$sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
+	Set-AzVMOSDisk -VM $virtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name
+	Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
+
+    # add Photon OS as VM data disk (will be setuped as ESXi OS disk)
+    Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
+	$SourceDiskName=((Get-AzDisk -ResourceGroupName $resourceGroupName | Where-Object {$_.name -ilike "$AzVMOSDiskPrefix*"})[0] | Select Name).Name
+	$sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
+	$virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+	Remove-AzVMDataDisk -VM $virtualMachine -Name $sourceDisk.Name
     Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
-    # Set the prepared data disk as os disk
-    $virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmname
-    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
-    Set-AzVMOSDisk -VM $virtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name
+	$sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $SourceDiskName
+	$virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+	Add-AzVMDataDisk -VM $virtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name -Lun 1 -CreateOption Attach
     Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
     Start-AzVM -ResourceGroupName $resourceGroupName -Name $vmName
+
 }
 
 set-AzVMboot-ESXi

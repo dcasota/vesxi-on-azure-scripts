@@ -166,6 +166,8 @@ function create-AzVM-vESXi_usingPhotonOS{
     param(
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         $Imagename="photon-azure-3.0-9355405",
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        $HyperVGeneration="V1", # actually there is no prestage detection of the image disk Hyper-V Generation. it must be specified manually for the VM data disk created
 
         [Parameter(Mandatory = $false)]
         [ValidateNotNull()]
@@ -225,7 +227,7 @@ function create-AzVM-vESXi_usingPhotonOS{
         [System.Management.Automation.Credential()]$VMLocalcred = (Get-credential -message 'Enter username and password for the VM user account to be created locally. Password must be 7-12 characters. Username must be all in small letters.'),	        	
    		
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$BashfileName="prepare-disk-bios.sh" # or prepare-disk-efi.sh		
+        [String]$Bashfile="C:\Users\admin\Downloads\vesxi-on-azure-scripts\prepare-disk-bios.sh" # or prepare-disk-efi.sh		
     )
 
 ## check Azure CLI
@@ -346,12 +348,14 @@ if (-not ($VM))
 {
 	# save and reapply location info because 'az vm create --custom-data' fails using a filename not in current path
 	$locationstack=get-location
-	set-location -Path ${PSScriptRoot}
+    $Bashfilepath=split-path $Bashfile -Parent
+    $Bashfilename=split-path $Bashfile -leaf
+	set-location -Path ${Bashfilepath}
 
 	$VMLocalAdminUser=$VMLocalcred.GetNetworkCredential().username
 	$VMLocalAdminPassword=$VMLocalcred.GetNetworkCredential().password
 	
-    $diskConfig = New-AzDiskConfig -AccountType 'Standard_LRS' -Location $LocationName -HyperVGeneration "V2" -CreateOption Empty -DiskSizeGB ${diskSizeGB} -OSType Linux
+    $diskConfig = New-AzDiskConfig -AccountType 'Standard_LRS' -Location $LocationName -HyperVGeneration $HyperVGeneration -CreateOption Empty -DiskSizeGB ${diskSizeGB} -OSType Linux
     New-AzDisk -Disk $diskConfig -ResourceGroupName $resourceGroupName -DiskName $ESXiDiskName
 
     # az vm create with custom-data
@@ -364,8 +368,8 @@ if (-not ($VM))
 	--image ${ImageName} `
 	--computer-name ${computerName} `
 	--nics ${NICName1} ${NicName2} `
-	--custom-data ${Bashfilename} `
 	--generate-ssh-keys `
+	--custom-data ${Bashfilename} `	
 	--boot-diagnostics-storage "https://${StorageAccountName}.blob.core.windows.net"
     } catch {}
 
