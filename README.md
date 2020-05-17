@@ -33,10 +33,14 @@ VMware Photon OS is installed first as some sort of helper-OS for the ESXi boot 
     Detach and re-attach the bootable ESXi data disk as os disk. Afterwards, boot the VM into ESXi Setup.
     The ESXi kickstart setup and the detach of the .vhdified ISO after ESXi setup, aren't automated yet.
    
-   In the actual development phase, the ESXi setup stops as no network adapter can be found.
+IMPORTANT! In the actual development phase, the ESXi setup stops as no network adapter can be found.
    See ```prepare-disk-bios.sh``` 'Network adapter Mellanox ConnectX-3 virtual function'.
     
 ![NoNetworkAdapter](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapter.png)
+
+Same behaviour on ESXi7.0
+![NoNetworkAdapterOnESXi7](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapterESXi7.png)
+
 
 Hint: The helper script ```set-AzVMboot-PhotonOS.ps1```switches os disk from ESXi to Photon OS (and ```set-AzVMboot-ESXi.ps1``` does vice versa).
  
