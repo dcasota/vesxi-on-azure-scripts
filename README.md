@@ -39,6 +39,7 @@ IMPORTANT! In the actual development phase, the ESXi setup stops as no network a
 ![NoNetworkAdapter](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapter.png)
 
 Same behaviour on ESXi7.0
+
 ![NoNetworkAdapterOnESXi7](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapterESXi7.png)
 
 
