@@ -139,9 +139,9 @@ EOF1
    1. Check prerequisites, if necessary install Azure Powershell and AzureCLI, and Azure login by device login method (twice!)
    2. Check Azure image, create a resource group, storage account, storage container, network security group and virtual network
    3. create network interface, two nics, one with a public IP address
-   4. create the vm with Photon OS as os disk an a data disk processed with cloud-init custom data from ```$Bashfilename```
-    See ```prepare-disk-ventoy.sh``` for detailed information.
-   5. The VM is created and boots into the Ventoy menu
+   4. create the vm with Photon OS as os disk, and a data disk processed with cloud-init custom data from ```$Bashfilename```.
+      See ```prepare-disk-ventoy.sh``` for detailed information.
+   5. The VM is created and boots into the Ventoy menu. Press enter to start ESXi setup.
 
 # Findings
   In the ESXi shell we can start to do some checks.
@@ -151,7 +151,7 @@ EOF1
   
 ![ESXi7ShellOnAzure-Samples1](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/Esxi7ShellonAzure-Samples1.png)
 
-  3. The newer Mellanox driver nmlx5 4.19.71.1 is listed however there are no available nics.
+  3. The newer Mellanox driver nmlx5 4.19.71.1 is listed, however no available nics are in the nic list.
 ```
 [root@localhost:~] localcli network nic list
 Name  PCI Device  Driver  Admin Status  Link Status  Speed  Duplex  MAC Address  MTU  Description
@@ -173,6 +173,7 @@ regtype=native,bus=pci,id=15b3101f15b30016......,driver=nmlx5_core
    It remains unclear why the specified nics are not configured and how to configure them.
 
   4. With ```dmesg | grep WARNING ``` the warnings during boot are listed.
+     There are a bunch of warnings. Missing VMKAcpi MCFG table, IOV initialization failure and missing realtime clock are the first ones.
 ```
 0:00:00:00.002 cpu0:1)WARNING: Serial: 366: consolePort initialization failed: Not found
 0:00:00:00.002 cpu0:1)WARNING: Serial: 368: debugShellPort initialization failed: Not found
