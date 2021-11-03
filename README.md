@@ -143,6 +143,14 @@ EOF1
     See ```prepare-disk-ventoy.sh``` for detailed information.
    5. The VM is created and boots into the Ventoy menu
 
+# Findings
+  In the ESXi shell we can start to do some checks.
+  1. Check the firmwareType ```vsish -e get /hardware/firmwareType```
+  2. show the Bios information ```vsish -e cat /hardware/bios/biosInfo```
+  and much more. Here's a sample output.
+  
+![ESXi7ShellOnAzure-Samples1](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/Esxi7ShellonAzure-Samples1.png)
+
 # Archive
   The repo contains several archived scripts.
   - ```create-AzVM-vESXi_usingAzImage-PhotonOS.ps1```, ```create-AzVM-vESXi_usingLocalFile-PhotonOS.ps1```
