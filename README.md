@@ -136,7 +136,7 @@ EOF1
    Change the default params ResourceGroupName, Imagename, etc. and run the script.
    
    VMware Photon OS is installed first as sort of helper-OS for the ESXi boot medium preparation. The script processes following steps:
-   1. Check prerequisites, remediate if necessary, and Azure login by device login method (twice!)
+   1. Check prerequisites, if necessary install Azure Powershell and AzureCLI, and Azure login by device login method (twice!)
    2. Check Azure image, create a resource group, storage account, storage container, network security group and virtual network
    3. create network interface, two nics, one with a public IP address
    4. create the vm with Photon OS as os disk an a data disk processed with cloud-init custom data from ```$Bashfilename```
