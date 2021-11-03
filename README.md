@@ -5,9 +5,8 @@
 This lab project contains scripts for provisioning VMware ESXi in a Microsoft Azure virtual machine. It is not yet finished. Use it at your own risk.
 See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
 
-# Provisioning
+# Getting started
 
-  How to use:
   1. Create an Azure GenV2 image with VMware Photon OS. The creation of the Azure image may be accomplished using https://github.com/dcasota/azure-scripts/blob/master/create-AzImage-PhotonOS.ps1.
   2. Create a customized ESXi 7 ISO image
   3. Upload the ESXi ISO image to a Google drive. In ```prepare-disk-ventoy.sh``` modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
