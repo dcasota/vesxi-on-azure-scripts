@@ -5,7 +5,7 @@
 This lab project contains scripts for provisioning VMware ESXi in a Microsoft Azure virtual machine. It is not yet functioning. Use it at your own risk.
 See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
 
-# Automated provisioning of an Azure ESXi VM 
+# Provisioning
 
   How to use:
   1. Create an Azure GenV2 image with VMware Photon OS. The creation of the Azure image may be accomplished using https://github.com/dcasota/azure-scripts/blob/master/create-AzImage-PhotonOS.ps1.
