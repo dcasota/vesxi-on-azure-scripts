@@ -56,7 +56,77 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
    Modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
    
    The implementation uses the open source product Ventoy which includes an easy method to execute iso in an Azure virtual machine as well.
-   In the context of Azure, serial console redirection must be explicitly configured.
+   In the context of Azure, serial console redirection must be explicitly configured. A basic serial console redirection configuration is included in the script.
+   
+   If you want to jump into the ESXi shell, you can modify the script by extending the ventoy-json creation code snippet.
+   The following sample adds a customized isolinux.cfg and boot.cfg of an ESXi 7.0.3 iso.
+   ```
+cat << EOF3 >> ./isolinux.cfg
+DEFAULT menu.c32
+serial 0 115200
+serial 1 115200
+MENU TITLE ESXi-v70-Lab Boot Menu
+NOHALT 1
+PROMPT 0
+TIMEOUT 80
+LABEL install
+  KERNEL mboot.c32
+  APPEND -c boot.cfg
+  MENU LABEL ESXi-v70-Lab ^Installer
+LABEL hddboot
+  LOCALBOOT 0x80
+  MENU LABEL ^Boot from local disk
+EOF3
+
+cat << EOF2 >> ./boot.cfg
+bootstate=0
+title=Loading ESXi installer
+timeout=5
+prefix=
+kernel=/b.b00
+kernelopt=runweasel cdromBoot tty1Port=com1 tty2Port=com1
+modules=/jumpstrt.gz --- /useropts.gz --- /features.gz --- /k.b00 --- /uc_intel.b00 --- /uc_amd.b00 --- /uc_hygon.b00 --- /procfs.b00 --- /vmx.v00 --- /vim.v00 --- /tpm.v00 --- /sb.v00 --- /s.v00 --- /nmlx5cor.v00 --- /nmlx5rdm.v00 --- /atlantic.v00 --- /bnxtnet.v00 --- /bnxtroce.v00 --- /brcmfcoe.v00 --- /elxiscsi.v00 --- /elxnet.v00 --- /i40en.v00 --- /iavmd.v00 --- /icen.v00 --- /igbn.v00 --- /ionic_en.v00 --- /irdman.v00 --- /iser.v00 --- /ixgben.v00 --- /lpfc.v00 --- /lpnic.v00 --- /lsi_mr3.v00 --- /lsi_msgp.v00 --- /lsi_msgp.v01 --- /lsi_msgp.v02 --- /mtip32xx.v00 --- /ne1000.v00 --- /nenic.v00 --- /nfnic.v00 --- /nhpsa.v00 --- /nmlx4_co.v00 --- /nmlx4_en.v00 --- /nmlx4_rd.v00 --- /ntg3.v00 --- /nvme_pci.v00 --- /nvmerdma.v00 --- /nvmetcp.v00 --- /nvmxnet3.v00 --- /nvmxnet3.v01 --- /pvscsi.v00 --- /qcnic.v00 --- /qedentv.v00 --- /qedrntv.v00 --- /qfle3.v00 --- /qfle3f.v00 --- /qfle3i.v00 --- /qflge.v00 --- /rste.v00 --- /sfvmk.v00 --- /smartpqi.v00 --- /vmkata.v00 --- /vmkfcoe.v00 --- /vmkusb.v00 --- /vmw_ahci.v00 --- /bmcal.v00 --- /crx.v00 --- /elx_esx_.v00 --- /btldr.v00 --- /esx_dvfi.v00 --- /esx_ui.v00 --- /esxupdt.v00 --- /tpmesxup.v00 --- /weaselin.v00 --- /esxio_co.v00 --- /loadesx.v00 --- /lsuv2_hp.v00 --- /lsuv2_in.v00 --- /lsuv2_ls.v00 --- /lsuv2_nv.v00 --- /lsuv2_oe.v00 --- /lsuv2_oe.v01 --- /lsuv2_oe.v02 --- /lsuv2_sm.v00 --- /native_m.v00 --- /qlnative.v00 --- /trx.v00 --- /vdfs.v00 --- /vmware_e.v00 --- /vsan.v00 --- /vsanheal.v00 --- /vsanmgmt.v00 --- /tools.t00 --- /xorg.v00 --- /gc.v00 --- /imgdb.tgz --- /imgpayld.tgz
+build=7.0.3-0.5.18825058
+updated=0
+EOF2
+  
+cat << EOF1 >> ./ventoy.json
+{
+    "theme_legacy": {
+        "display_mode": "serial",
+        "serial_param": "--unit=0 --speed=115200 --word=8 --parity=no --stop=1"
+    },
+    "theme_uefi": {
+        "display_mode": "serial",
+        "serial_param": "--unit=0 --speed=115200 --word=8 --parity=no --stop=1"
+    },
+    "conf_replace_legacy": [
+        {
+            "iso": "/ESXi70-customized.iso",
+            "org": "/boot.cfg",
+            "new": "/ventoy/boot.cfg"
+        },
+        {
+            "iso": "/ESXi70-customized.iso",
+            "org": "/isolinux.cfg",
+            "new": "/ventoy/isolinux.cfg"
+        }
+    ],
+    "conf_replace_uefi": [
+        {
+            "iso": "/ESXi70-customized.iso",
+            "org": "/EFI/BOOT/boot.cfg",
+            "new": "/ventoy/boot.cfg"
+        },
+        {
+            "iso": "/ESXi70-customized.iso",
+            "org": "/isolinux.cfg",
+            "new": "/ventoy/isolinux.cfg"
+        }
+    ]	
+}
+EOF1
+```
 
 ## ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```
    The virtual machine type used is a Standard_E4s_v3 offering with 4vCPU, 32GB RAM, Accelerating Networking with two nics and Premium Disk Support with 16 GB boot storage.
