@@ -1,6 +1,6 @@
 # VMware ESXi in a Microsoft Azure virtual machine
 
-![ESXi67](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXi67.png)
+![ESXi7ShellOnAzure](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXi7ShellonAzure.png)
 
 This lab project contains scripts for provisioning VMware ESXi in a Microsoft Azure virtual machine. It is not yet functioning. Use it at your own risk.
 See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
