@@ -150,7 +150,29 @@ EOF1
   Here's a sample output.
   
 ![ESXi7ShellOnAzure-Samples1](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/Esxi7ShellonAzure-Samples1.png)
-  3. With ```dmesg | grep WARNING ``` the warnings during boot are listed.
+
+  3. The newer Mellanox driver nmlx5 4.19.71.1 is listed however there are no available nics.
+```
+[root@localhost:~] localcli network nic list
+Name  PCI Device  Driver  Admin Status  Link Status  Speed  Duplex  MAC Address  MTU  Description
+----  ----------  ------  ------------  -----------  -----  ------  -----------  ---  -----------
+[root@localhost:~] localcli network sriovnic list
+Name  PCI Device  Driver  Link  Speed  Duplex  MAC Address  MTU  Description
+----  ----------  ------  ----  -----  ------  -----------  ---  -----------
+[root@localhost:~]
+```
+
+   The vendor and product id [15b3:0016] which can be identified through Photon OS, on ESXi it is integrated in the nmlx5_core.map, too.
+```
+cat /etc/vmware/default.map.d/nmlx5_core.map | grep 15b3 | gr
+ep 0016
+regtype=native,bus=pci,id=15b3101d15b30016......,driver=nmlx5_core
+regtype=native,bus=pci,id=15b3101f15b30016......,driver=nmlx5_core
+[root@localhost:~]
+```
+   It remains unclear why the specified nics are not configured and how to configure them.
+
+  4. With ```dmesg | grep WARNING ``` the warnings during boot are listed.
 ```
 0:00:00:00.002 cpu0:1)WARNING: Serial: 366: consolePort initialization failed: Not found
 0:00:00:00.002 cpu0:1)WARNING: Serial: 368: debugShellPort initialization failed: Not found
