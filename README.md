@@ -1,4 +1,4 @@
-# VMware ESXi VM on Azure
+# VMware ESXi in a Microsoft Azure virtual machine
 
 ![ESXi67](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXi67.png)
 
