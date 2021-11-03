@@ -140,7 +140,8 @@ EOF1
    3. create network interface, two nics, one with a public IP address
    4. create the vm with Photon OS as os disk, and a data disk processed with cloud-init custom data from ```$Bashfilename```.
       See ```prepare-disk-ventoy.sh``` for detailed information.
-   5. The VM is created and boots into the Ventoy menu. Press enter to start ESXi setup.
+   5. The VM is created and boots first into Photon OS. When the login prompt appears, do nothing. It boots automatically into the Ventoy menu.
+   6. Press enter to start ESXi setup.
 
 # Findings
   In the ESXi shell we can start to do some checks.
