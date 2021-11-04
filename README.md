@@ -11,7 +11,8 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
   2. Create an Azure GenV2 image with VMware Photon OS.
   3. Create a customized ESXi 7 ISO image.
   4. Upload the customized ESXi ISO image to a Google drive, and in ```prepare-disk-ventoy.sh``` modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
-  5. In ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1``` change the default params ResourceGroupName, Imagename, etc. and run the script.
+     Optionally, see steps to configure jump into the ESXi shell.
+  5. In ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1``` change the default params ResourceGroupName, Imagename, etc. Run the script.
 
   In the actual development phase, the ESXi setup stops as no network adapter can be found.
 
