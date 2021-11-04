@@ -46,8 +46,13 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
    add-esxsoftwaredepot $ESXiZipFile
    new-esximageprofile -CloneProfile $ESXiZipFileName -Name $ImageProfileName -Vendor $VendorName
    set-esximageprofile -imageprofile $ImageProfileName -AcceptanceLevel PartnerSupported
+ 
+   # Remove Mellanox nmlx5 driver
+   Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-rdma
+   Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-en
+   Remove-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx4-core
 
-   #Newer Mellanox driver
+   #Newer Mellanox nmlx5 driver (for ConnectX-4 + 5)
    Add-EsxSoftwareDepot -DepotUrl $DepotFolder\Mellanox-nmlx5_4.19.71.1-1OEM.700.1.0.15525992_17850538-package\Mellanox-nmlx5_4.19.71.1-1OEM.700.1.0.15525992_17850538.zip
    Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx5-core,nmlx5-rdma
 
