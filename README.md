@@ -148,6 +148,7 @@ EOF1
       See ```prepare-disk-ventoy.sh``` for detailed information.
     
    Enter the Azure virtual machine serial console of the newly created vm. It boots first into Photon OS. When the login prompt appears, do nothing. It boots automatically into the Ventoy menu. Press enter to start ESXi setup.
+   If you have configured 'jump into ESXi Shell', the ESXi Shell prompt appears. Enter username and password. Without any kickstart, enter 'root' as username and press enter.
 
 # Findings
   In the ESXi shell we can start to do some checks.
