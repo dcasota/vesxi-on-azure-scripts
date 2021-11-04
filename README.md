@@ -1,36 +1,39 @@
-# VMware ESXi in a Microsoft Azure virtual machine
+# VMware ESXi 7.x in a Microsoft Azure virtual machine
 
 ![ESXi7ShellOnAzure](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXi7ShellonAzure.png)
 
-This lab project contains scripts for provisioning VMware ESXi in a Microsoft Azure virtual machine. It is not yet finished. Use it at your own risk.
+The lab project target is to make run VMware ESXi 7.x in a Microsoft Azure virtual machine. It is not yet finished. Use it at your own risk.
 See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
 
 # Getting started
 
-  1. Create an Azure GenV2 image with VMware Photon OS. The creation of the Azure image may be accomplished using https://github.com/dcasota/azure-scripts/blob/master/create-AzImage-PhotonOS.ps1.
-  2. Create a customized ESXi 7 ISO image
-  3. Upload the ESXi ISO image to a Google drive. In ```prepare-disk-ventoy.sh``` modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
-  4. In ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1``` change the default params ResourceGroupName, Imagename, etc. and run the script.
+  1. Download this lab project to MS Windows client with installed Powershell.
+  2. Create an Azure GenV2 image with VMware Photon OS.
+  3. Create a customized ESXi 7 ISO image.
+  4. Upload the customized ESXi ISO image to a Google drive, and in ```prepare-disk-ventoy.sh``` modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
+  5. In ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1``` change the default params ResourceGroupName, Imagename, etc. and run the script.
 
   In the actual development phase, the ESXi setup stops as no network adapter can be found.
 
   ![NoNetworkAdapterOnESXi7](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapterESXi7.png)
 
+## MS Windows client with installed Powershell
+   This lab uses MS Powershell, Azure Powershell, Azure CLI, ESXi Customizer and VMware PowerCLI Systembuilder functionalities. To make it run on eg. Windows 10, download ```prepare-disk-ventoy.sh``` and ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```. Use Notepad++ and Powershell ISE to modify params inside the scripts.
+   
 ## Azure GenV2 image with VMware Photon OS
-   Go through the steps in https://github.com/dcasota/azure-scripts#photon-os-on-azure---scripts to create the required Azure GenV2 image.
+   The step-by-step-guide in https://github.com/dcasota/azure-scripts#photon-os-on-azure---scripts explains how to upload Photon OS on Azure and store it as a GenV2 image.
+   Download and run https://github.com/dcasota/azure-scripts/blob/master/create-AzImage-PhotonOS.ps1 to create an Azure GenV2 image. 
    
 ## Create a customized ESXi 7 ISO image
-   The ESXi ISO image customization is processed to make use of newer Mellanox adapter driver versions.
-   VMware ESXi as Microsoft Azure virtual machine has the same minimal requirements as a baremetal installation.
-   The offering used includes ethernet adapters Mellanox Technologies MT27710 Family [ConnectX-4 Lx Virtual Function] [15b3:1016].
+   The Azure virtual machine nic adapters type is Mellanox ConnectX-4. The standard ESXi7 ISO image contains adapters drivers however the network functionality doesn't work yet.
+   This step of ESXi ISO image customization is processed to make use of newer Mellanox adapter driver versions.
 
    For the ESXi ISO image customization,
-   - download the ESXi-Customizer from github.com/VFrontDe/ESXi-Customizer-PS.
-   - run the ESXi Customizer (```C:\ESXi-Customizer-PS-v2.8.1.ps1 -ozip -v70```) to download the standard ESXi image.
+   - download the ESXi-Customizer from github.com/VFrontDe/ESXi-Customizer-PS
+   - run the ESXi Customizer (```C:\ESXi-Customizer-PS-v2.8.1.ps1 -ozip -v70```) to download the standard ESXi image
    - download the latest Mellanox drivers eg. https://customerconnect.vmware.com/en/downloads/details?downloadGroup=DT-ESXI70-MELLANOX-NMLX5_CORE-419711&productId=974
-     and unzip it to a directory eg. c:\driver-offline-bundle70.
-    
-   Here's a powershell script sample which creates a customized iso. Change the variables as needed.
+     and unzip it to a directory eg. c:\driver-offline-bundle70.    
+   - Here's a powershell script sample which creates a customized iso. Change the variables as needed.
    ```
    $ESXiZipFileName="ESXi-7.0U3a-18825058-standard"
    $ESXiZipFile="C:/"+$ESXiZipFileName+".zip"
@@ -49,13 +52,14 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
 
    Export-EsxImageProfile -ImageProfile $ImageProfileName -ExportToIso -NoSignatureCheck -force -FilePath $ISOFile
    ```
+    
 
 ## ```prepare-disk-ventoy.sh```
-   Upload the customized ESXi ISO image to a Google drive as this bash script will download it from there.
+   Upload the customized ESXi ISO image eg. "ESXi70-customized.iso" to a Google drive as the bash script ```prepare-disk-ventoy.sh``` will download it from there.
    Modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
    
-   The implementation uses the open source product Ventoy which includes an easy method to execute iso in an Azure virtual machine as well.
-   In the context of Azure, serial console redirection must be explicitly configured. A basic serial console redirection configuration is included in the script.
+   The implementation uses the open source product Ventoy which includes an easy method to start an ISO setup in an Azure virtual machine.
+   In the context of Azure, serial console redirection must be explicitly configured. A basic serial console redirection configuration method is included as well.
    
    If you want to jump into the ESXi shell, you can modify the script by extending the ventoy-json creation code snippet.
    The following sample adds a customized isolinux.cfg and boot.cfg of an ESXi 7.0.3 iso.
@@ -128,20 +132,21 @@ EOF1
 ```
 
 ## ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```
-   The virtual machine type used is a Standard_E4s_v3 offering with 4vCPU, 32GB RAM, Accelerating Networking with two nics and Premium Disk Support with 16 GB boot storage.
-   Without Accelerated Networking, network adapters are not presented inside the virtual machine.
-   The uploaded VMware Photon OS vhd is stored as page blob on a premium disk to make use of it in a virtual machine.
+   Change the default params ResourceGroupName, Imagename, etc. and run the script ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```.
    
-   Change the default params ResourceGroupName, Imagename, etc. and run the script.
-   
-   VMware Photon OS is installed first as sort of helper-OS for the ESXi boot medium preparation. The script processes following steps:
-   1. Check prerequisites, if necessary install Azure Powershell and AzureCLI, and Azure login by device login method (twice!)
-   2. Check Azure image, create a resource group, storage account, storage container, network security group and virtual network
-   3. create network interface, two nics, one with a public IP address
-   4. create the vm with Photon OS as os disk, and a data disk processed with cloud-init custom data from ```$Bashfilename```.
+   What the script does:
+   The virtual machine type offering used is a Standard_E4s_v3 offering with 4vCPU, 32GB RAM, Premium Disk Support and 2x 16GB storage, and Accelerating Networking with two nics. The offering actually includes ethernet adapters Mellanox Technologies MT27710 Family [ConnectX-4 Lx Virtual Function] [15b3:1016].
+   Without Accelerated Networking, network adapters would not be presented inside the virtual machine.  
+    
+   From the Azure GenV2 image, VMware Photon OS is installed first as sort of helper os for the ESXi boot medium preparation. The script processes following steps:
+   On your MS Windows client: check prerequisites, if necessary install Azure Powershell and AzureCLI, and Azure login by device login method (twice!)
+   On your Azure subscription:
+   1. Check Azure image, create a resource group, storage account, storage container, network security group and virtual network
+   2. create network interface, two nics, one with a public IP address
+   3. create the vm with Photon OS as os disk, and a data disk processed with cloud-init custom data from ```$Bashfilename```.
       See ```prepare-disk-ventoy.sh``` for detailed information.
-   5. The VM is created and boots first into Photon OS. When the login prompt appears, do nothing. It boots automatically into the Ventoy menu.
-   6. Press enter to start ESXi setup.
+    
+   Enter the Azure virtual machine serial console of the newly created vm. It boots first into Photon OS. When the login prompt appears, do nothing. It boots automatically into the Ventoy menu. Press enter to start ESXi setup.
 
 # Findings
   In the ESXi shell we can start to do some checks.
