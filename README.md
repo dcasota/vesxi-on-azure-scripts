@@ -36,7 +36,7 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
      and unzip it to a directory eg. c:\driver-offline-bundle70.    
    - Here's a powershell script sample which creates a customized iso. Change the variables as needed.
    ```
-   $ESXiZipFileName="ESXi-7.0U3a-18825058-standard"
+   $ESXiZipFileName="ESXi-7.0U3e-19898904-standard"
    $ESXiZipFile="C:/"+$ESXiZipFileName+".zip"
    $ImageProfileName="ESXi-v70-Lab"
    $DepotFolder="C:\driver-offline-bundle70"
