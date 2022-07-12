@@ -25,7 +25,9 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
    - VMware PowerCLI
    - ESXi Customizer
    
-   To make it run on eg. Windows 10, download ```prepare-disk-ventoy.sh``` and ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```. Use Notepad++ and Powershell ISE to modify params inside the scripts.
+   To make it run on eg. Windows 10, download ```prepare-disk-ventoy.sh``` and ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```.
+   
+   You will need to modify params inside ```prepare-disk-ventoy.sh``` (see corresponding section below).
    
 ## Azure GenV2 image with VMware Photon OS
    The step-by-step-guide in https://github.com/dcasota/azure-scripts#photon-os-on-azure---scripts explains how to upload Photon OS on Azure and store it as a GenV2 image.
