@@ -11,6 +11,7 @@
 # History
 # 0.1  10.12.2019   dcasota  UNFINISHED! WORK IN PROGRESS!
 # 0.2  03.11.2021   dcasota  UNFINISHED! WORK IN PROGRESS!
+# 0.21 05.11.2021   dcasota  enforced upgrade of AzureCLI to 2.30 added
 #
 # Prerequisites:
 #    - Microsoft Powershell, Microsoft Azure Powershell, Microsoft Azure CLI
@@ -99,8 +100,18 @@
 #    The ESXi VM offering on Azure must support:
 #       - Accelerated Networking. Without acceleratednetworking, network adapters are not presented to the ESXi VM.
 #       - Premium disk support. The uploaded VMware Photon OS vhd must be stored as page blob on a premium disk to make use of it.
-#       The script uses the Standard_E4s_v3 offering: 4vCPU,32GB RAM, Accelerating Networking: Yes, Premium disk support:Yes. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes-memory#esv3-series
+#       The script uses the Standard_E4s_v3 offering: 4vCPU,32GB RAM, Accelerating Networking: Yes, Premium disk support:Yes. See https://docs.microsoft.com/en-us/azure/virtual-machines/ev3-esv3-series
 #
+#
+#    Not implemented yet: Trusted Launch
+#       'az vm create' supports following new parameters:
+#       --security-type trustedLaunch `
+#       --enable-secure-boot true `
+#       --enable-vtpm true `
+#       However, the script finishes with an error ""Use of TrustedLaunch setting is not supported for the provided image."
+#       Useful weblinks:
+#          https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch-portal?tabs=cli
+#          https://blog.hametbenoit.info/2021/10/28/azure-you-can-now-enable-trusted-launch-on-azure-virtual-machines-preview
 #
 # Known issues:
 # - Creation of the VM has finished but custom-data of az vm create was not processed. On the console you see an error of missing ovf-env.xml file.
@@ -170,7 +181,6 @@ function create-AzVM-vESXi_usingPhotonOS{
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         $Imagename="photon-azure-4.0-ca7c9e933_V2.vhd",
 
-
         [Parameter(Mandatory = $false)][ValidateNotNull()]
         [ValidateSet('eastasia','southeastasia','centralus','eastus','eastus2','westus','northcentralus','southcentralus',`
         'northeurope','westeurope','japanwest','japaneast','brazilsouth','australiaeast','australiasoutheast',`
@@ -180,64 +190,85 @@ function create-AzVM-vESXi_usingPhotonOS{
         'germanynorth','germanywestcentral','norwaywest','norwayeast','brazilsoutheast','westus3')]
         [String]$Location="switzerlandnorth",
 
-
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$ResourceGroupName="ph4Rev1lab",
 
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$StorageAccountName="photonosstorage",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$ContainerName="disks",
-
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$NetworkName="virtualesxi-lab-network",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$VnetAddressPrefix="192.168.0.0/16",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$SubnetAddressPrefix="192.168.1.0/24",
-
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$VMSize = "Standard_E4s_v3",
-
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
         [String]$VMName = "photonos",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$NICName1 = "${VMName}nic1",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$Ip1Address="192.168.1.6",
-		[Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$PublicIPDNSName="${NICName1}dns",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$NICName2 = "${VMName}nic2",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$Ip2Address="192.168.1.5",		
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$nsgName = "myNetworkSecurityGroup",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$diskName = "photonosdisk",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$diskSizeGB = '16', # minimum is 16gb
-
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$ESXiDiskName = "ESXi",
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$ESXiBootdiskSizeGB = '16', # minimum is 16gb
-        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$Computername = $VMName ,
 
         [Parameter(Mandatory = $false)][ValidateNotNull()]
         [string]$VMLocalAdminUser = "local", # admin user name cannot contain upper case character A-Z, special characters \/"[]:|<>+=;,?*@#()! or start with $ or -
 
         [Parameter(Mandatory = $false)][ValidateNotNull()]
         [string]$VMLocalAdminPwd="Secure2020123.", #12-123 chars
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$VMSize = "Standard_E4s_v3",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$StorageAccountName="photonosstorage",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$ContainerName="disks",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$NetworkName="virtualesxi-lab-network",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$VnetAddressPrefix="192.168.0.0/16",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$SubnetAddressPrefix="192.168.1.0/24",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$NICName1 = "${VMName}nic1",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$Ip1Address="192.168.1.6",
+
+		[Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$PublicIPDNSName="${NICName1}dns",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$NICName2 = "${VMName}nic2",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$Ip2Address="192.168.1.5",
+        		
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$nsgName = "nsg"+$VMName,
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$diskName = "photonosdisk",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$diskSizeGB = '16', # minimum is 16gb
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$ESXiDiskName = "ESXi",
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$ESXiBootdiskSizeGB = '16', # DO NOT CHANGE BECAUSE THE VALUE IS HARDCODED IN prepare-disk-ventoy.sh
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
+        [String]$Computername = $VMName ,
            		
         [Parameter(Mandatory = $false, ParameterSetName = 'PlainText')]
-        [String]$Bashfile="C:\Users\admin\Downloads\vesxi-on-azure-scripts\prepare-disk-ventoy.sh"	
+        [String]$Bashfilename="prepare-disk-ventoy.sh"	
     )
 
 # virtual machine local admin setting
 $VMLocalAdminSecurePassword = ConvertTo-SecureString $VMLocalAdminPwd -AsPlainText -Force
 $VMLocalcred = New-Object System.Management.Automation.PSCredential ($VMLocalAdminUser, $VMLocalAdminSecurePassword)
+
+$Bashfilepath=$ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath('.\')
+$Bashfile = join-path -path $Bashfilepath -childpath $Bashfilename
+
+if (!(Test-Path $Bashfile))
+{
+    Write-Verbose "Could not find " + $Bashfile + "."
+    exit
+}
 
 # https://github.com/Azure/azure-powershell/blob/master/documentation/breaking-changes/breaking-changes-messages-help.md
 Set-Item Env:\SuppressAzurePowerShellBreakingChangeWarnings "true"
@@ -319,7 +350,7 @@ if (($version -eq "") -or ($version -lt "2.11.0"))
     }
     if (test-path(.\AzureCLI.msi)) {rm .\AzureCLI.msi}
 }
-if ($version -lt "2.19.1")
+if ($version -lt "2.29.2")
 {
     az upgrade --yes --all 2>&1 | out-null
 }
@@ -518,12 +549,8 @@ if (-not ($VM))
 {
 	# save and reapply location info because 'az vm create --custom-data' fails using a filename not in current path
 	$locationstack=get-location
-    $Bashfilepath=split-path $Bashfile -Parent
-    $Bashfilename=split-path $Bashfile -leaf
-	set-location -Path ${Bashfilepath}
 
-	$VMLocalAdminUser=$VMLocalcred.GetNetworkCredential().username
-	$VMLocalAdminPassword=$VMLocalcred.GetNetworkCredential().password
+	set-location -Path ${Bashfilepath}
 	
     $diskConfig = New-AzDiskConfig -AccountType 'Standard_LRS' -Location $Location -HyperVGeneration $HyperVGeneration -CreateOption Empty -DiskSizeGB ${diskSizeGB} -OSType Linux
     New-AzDisk -Disk $diskConfig -ResourceGroupName $resourceGroupName -DiskName $ESXiDiskName
@@ -532,22 +559,65 @@ if (-not ($VM))
     try {
 	az vm create --resource-group ${ResourceGroupName} --location ${Location} --name ${vmName} `
 	--size ${VMSize} `
-	--admin-username ${VMLocalAdminUser} --admin-password ${VMLocalAdminPassword} `
+	--admin-username ${VMLocalAdminUser} --admin-password ${VMLocalAdminPwd} `
 	--os-disk-size-gb ${diskSizeGB} `
     --attach-data-disks $ESXiDiskName `
 	--image ${ImageName} `
 	--computer-name ${computerName} `
 	--nics ${NICName1} ${NicName2} `
+    --public-ip-sku Standard `
 	--generate-ssh-keys `
     --custom-data ${Bashfilename} `
+    --enable-secure-boot true `
+    --enable-vtpm true `
 	--boot-diagnostics-storage "https://${StorageAccountName}.blob.core.windows.net"
-    } catch {}  
+    } catch {}
+
+    #     --security-type trustedLaunch `
+    # "Use of UEFI settings is not supported for the provided image.
 
     $VM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName
     Set-AzVMBootDiagnostic -VM $VM -Enable -ResourceGroupName $ResourceGroupName -StorageAccountName $StorageAccountName
 
 	set-location -path $locationstack
     }
+
+# The VM is configured through custom-data to automatically power down. Wait for PowerState/stopped.
+$Timeout = 300
+$i = 0
+for ($i=0;$i -lt $Timeout; $i++) {
+	sleep 1
+    $percentComplete = ($i / $Timeout) * 100
+    Write-Progress -Activity 'Provisioning' -Status "Provisioning in progress ..." -PercentComplete $percentComplete
+    $objVM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $vmName -status -ErrorAction SilentlyContinue
+	if (-not ([Object]::ReferenceEquals($objVM,$null))) {
+        if ((((($objVM).Statuses[1]).Code) -ceq "PowerState/stopped") -or (((($objVM).Statuses[1]).Code) -ceq "PowerState/deallocated")) { 		
+		    # Make sure the VM is stopped but not deallocated so you can detach/attach disk
+		    Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
+            # Save Photon OS Disk name
+		    $PhotonDiskName=(get-azvm -ResourceGroupName $resourceGroupName -Name $vmName).StorageProfile.OSdisk.Name
+		    # Detach the prepared data disk
+		    $virtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+		    Remove-AzVMDataDisk -VM $VirtualMachine -Name $ESXiDiskName
+		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
+		    # Set the prepared data disk as os disk
+		    $VirtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $ESXiDiskName
+		    Set-AzVMOSDisk -VM $VirtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name
+		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $VirtualMachine
+
+            # Attach Photon OS disk as second disk
+            Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
+		    $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $PhotonDiskName
+		    $VirtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
+		    Add-AzVMDataDisk -VM $virtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name -Lun 0 -CreateOption Attach
+		    Update-AzVM -ResourceGroupName $resourceGroupName -VM $virtualMachine
+
+		    Start-AzVM -ResourceGroupName $resourceGroupName -Name $vmName
+            break
+        }
+    }
+}
 
 }
 
