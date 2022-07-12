@@ -35,7 +35,7 @@ It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://
    
    As a result, you should get an Azure Photon OS image eg. 4.0 rev2.
    
-   ![ESXi7ShellOnAzure](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ph4rev2image.png)
+   ![ph4rev2image](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ph4rev2image.png)
    
 ## Create a customized ESXi 7 ISO image
    The Azure virtual machine nic adapters type is Mellanox ConnectX-4. The standard ESXi7 ISO image contains adapters drivers however the network functionality doesn't work yet.
@@ -45,30 +45,33 @@ It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://
    - download the ESXi-Customizer from https://www.github.com/VFrontDe/ESXi-Customizer-PS
    - run the ESXi Customizer (eg ```.\ESXi-Customizer-PS-v2.8.1.ps1 -ozip -v70```) to download the standard ESXi image
 
-     ![NoNetworkAdapterOnESXi7](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/esxcustomizeroutput1.png)
+     ![esxcustomizeroutput1](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/esxcustomizeroutput1.png)
 
    - download the latest Mellanox drivers eg. https://customerconnect.vmware.com/en/downloads/details?downloadGroup=DT-ESXI70-MELLANOX-NMLX5_CORE-419711&productId=974
      and unzip it to a directory eg. c:\driver-offline-bundle70.    
    - Here's a powershell script sample which creates a customized iso. Change the variables as needed.
-   ```
-   $ESXiZipFileName="ESXi-7.0U3e-19898904-standard"
-   $ESXiZipFile="C:/"+$ESXiZipFileName+".zip"
-   $ImageProfileName="ESXi-v70-Lab"
-   $DepotFolder="C:\driver-offline-bundle70"
-   $VendorName="fill in a name"
-   $ISOFile="C:\ESXi70-customized.iso"
+      ```
+      $ESXiZipFileName="ESXi-7.0U3e-19898904-standard"
+      $ESXiZipFile="C:/"+$ESXiZipFileName+".zip"
+      $ImageProfileName="ESXi-v70-Lab"
+      $DepotFolder="C:\driver-offline-bundle70"
+      $VendorName="fill in a name"
+      $ISOFile="C:\ESXi70-customized.iso"
+   
+      add-esxsoftwaredepot $ESXiZipFile
+      new-esximageprofile -CloneProfile $ESXiZipFileName -Name $ImageProfileName -Vendor $VendorName
+      set-esximageprofile -imageprofile $ImageProfileName -AcceptanceLevel PartnerSupported
 
-   add-esxsoftwaredepot $ESXiZipFile
-   new-esximageprofile -CloneProfile $ESXiZipFileName -Name $ImageProfileName -Vendor $VendorName
-   set-esximageprofile -imageprofile $ImageProfileName -AcceptanceLevel PartnerSupported
+      # Add newer Mellanox nmlx5 driver
+      Add-EsxSoftwareDepot -DepotUrl $DepotFolder\Mellanox-nmlx5_4.19.71.1-1OEM.700.1.0.15525992_17850538-package\Mellanox-nmlx5_4.19.71.1-1OEM.700.1.0.15525992_17850538.zip
+      Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx5-core,nmlx5-rdma
 
-   # Add newer Mellanox nmlx5 driver
-   Add-EsxSoftwareDepot -DepotUrl $DepotFolder\Mellanox-nmlx5_4.19.71.1-1OEM.700.1.0.15525992_17850538-package\Mellanox-nmlx5_4.19.71.1-1OEM.700.1.0.15525992_17850538.zip
-   Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx5-core,nmlx5-rdma
-
-   Export-EsxImageProfile -ImageProfile $ImageProfileName -ExportToIso -NoSignatureCheck -force -FilePath $ISOFile
-   ```
-    
+      Export-EsxImageProfile -ImageProfile $ImageProfileName -ExportToIso -NoSignatureCheck -force -FilePath $ISOFile
+      ```
+   
+      ![ESXicustomizeroutput2](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXicustomizeroutput2.png)    
+      
+     In the target folder you should find the iso eg. ESXi70-customized.iso.
 
 ## ```prepare-disk-ventoy.sh```
    This step is a preparation before running ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```. In short, we need to make the customized ESXi ISO image available on an online drive share.
