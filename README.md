@@ -5,7 +5,7 @@
 The lab project target is to make run VMware ESXi 7.x in a Microsoft Azure virtual machine. It is not yet finished. Use it at your own risk.
 See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
 
-# Getting started
+# Getting started  
 
   1. Download this lab project to MS Windows client with installed Powershell.
   2. Create an Azure GenV2 image with VMware Photon OS.
@@ -18,8 +18,14 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
 
   ![NoNetworkAdapterOnESXi7](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapterESXi7.png)
 
-## MS Windows client with installed Powershell
-   This lab uses MS Powershell, Azure Powershell, Azure CLI, ESXi Customizer and VMware PowerCLI Systembuilder functionalities. To make it run on eg. Windows 10, download ```prepare-disk-ventoy.sh``` and ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```. Use Notepad++ and Powershell ISE to modify params inside the scripts.
+## MS Windows client with installed Powershell  
+
+   This lab uses
+   - MS Powershell, Azure Powershell, Azure CLI
+   - VMware PowerCLI
+   - ESXi Customizer
+   
+   To make it run on eg. Windows 10, download ```prepare-disk-ventoy.sh``` and ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```. Use Notepad++ and Powershell ISE to modify params inside the scripts.
    
 ## Azure GenV2 image with VMware Photon OS
    The step-by-step-guide in https://github.com/dcasota/azure-scripts#photon-os-on-azure---scripts explains how to upload Photon OS on Azure and store it as a GenV2 image.
