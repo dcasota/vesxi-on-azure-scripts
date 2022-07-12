@@ -56,14 +56,17 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
     
 
 ## ```prepare-disk-ventoy.sh```
-   Upload the customized ESXi ISO image eg. "ESXi70-customized.iso" to a Google drive as the bash script ```prepare-disk-ventoy.sh``` will download it from there.
-   Modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
+   This step is a preparation before running ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```. In short, we need to make the customized ESXi ISO image available.
+   
+   As online share from where the customized ESXi ISO image will be downloaded, the meccano uses a Google drive. So far, this is the only solution the script supports.
+   
+   Upload the customized ESXi ISO image eg. "ESXi70-customized.iso" to your Google drive.
+   Inside the script ```prepare-disk-ventoy.sh```, modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
    
    The implementation uses the open source product Ventoy which includes an easy method to start an ISO setup in an Azure virtual machine.
    In the context of Azure, serial console redirection must be explicitly configured. A basic serial console redirection configuration method is included as well.
    
-   If you want to jump into the ESXi shell, you can modify the script by extending the ventoy-json creation code snippet.
-   The following sample adds a customized isolinux.cfg and boot.cfg of an ESXi 7.0.3 iso.
+   To support login into the ESXi shell, modify the script by extending the ventoy-json creation code snippet below. The following sample adds a customized isolinux.cfg and boot.cfg of an ESXi 7.0.3 iso.
    ```
 cat << EOF3 >> ./isolinux.cfg
 DEFAULT menu.c32
