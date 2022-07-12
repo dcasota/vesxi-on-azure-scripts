@@ -2,8 +2,8 @@
 
 ![ESXi7ShellOnAzure](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXi7ShellonAzure.png)
 
-The lab project target is to make run VMware ESXi 7.x in a Microsoft Azure virtual machine. It is not yet finished. Use it at your own risk.
-See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
+The lab project target is to make run VMware ESXi 7.x in a Microsoft Azure virtual machine.
+It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress).
 
 # Getting started  
 
@@ -43,7 +43,10 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
 
    For the ESXi ISO image customization,
    - download the ESXi-Customizer from https://www.github.com/VFrontDe/ESXi-Customizer-PS
-   - run the ESXi Customizer (```C:\ESXi-Customizer-PS-v2.8.1.ps1 -ozip -v70```) to download the standard ESXi image
+   - run the ESXi Customizer (eg ```.\ESXi-Customizer-PS-v2.8.1.ps1 -ozip -v70```) to download the standard ESXi image
+
+     ![NoNetworkAdapterOnESXi7](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/esxcustomizeroutput1.png)
+
    - download the latest Mellanox drivers eg. https://customerconnect.vmware.com/en/downloads/details?downloadGroup=DT-ESXI70-MELLANOX-NMLX5_CORE-419711&productId=974
      and unzip it to a directory eg. c:\driver-offline-bundle70.    
    - Here's a powershell script sample which creates a customized iso. Change the variables as needed.
@@ -68,9 +71,9 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
     
 
 ## ```prepare-disk-ventoy.sh```
-   This step is a preparation before running ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```. In short, we need to make the customized ESXi ISO image available.
+   This step is a preparation before running ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```. In short, we need to make the customized ESXi ISO image available on an online drive share.
    
-   As online share from where the customized ESXi ISO image will be downloaded, the meccano uses a Google drive. So far, this is the only solution the script supports.
+   As online drive share from where the customized ESXi ISO image will be downloaded, the meccano in ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1``` uses a Google drive. So far, this is the only solution the script supports.
    
    Upload the customized ESXi ISO image eg. "ESXi70-customized.iso" to your Google drive.
    Inside the script ```prepare-disk-ventoy.sh```, modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
