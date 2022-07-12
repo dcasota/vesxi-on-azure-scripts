@@ -23,7 +23,7 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
    
 ## Azure GenV2 image with VMware Photon OS
    The step-by-step-guide in https://github.com/dcasota/azure-scripts#photon-os-on-azure---scripts explains how to upload Photon OS on Azure and store it as a GenV2 image.
-   Download and run https://github.com/dcasota/azure-scripts/blob/master/create-AzImage-PhotonOS.ps1 to create an Azure GenV2 image. 
+   Download and run https://github.com/dcasota/azure-scripts/blob/master/PhotonOS/create-AzImage-PhotonOS.ps1 to create an Azure GenV2 image. 
    
 ## Create a customized ESXi 7 ISO image
    The Azure virtual machine nic adapters type is Mellanox ConnectX-4. The standard ESXi7 ISO image contains adapters drivers however the network functionality doesn't work yet.
