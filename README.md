@@ -20,18 +20,22 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
 
 ## MS Windows client with installed Powershell  
 
-   This lab uses
+   This lab uses a laptop with installed
    - MS Powershell, Azure Powershell, Azure CLI
    - VMware PowerCLI
    - ESXi Customizer
    
-   To make it run on eg. Windows 10, download ```prepare-disk-ventoy.sh``` and ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```.
+   To make the lab run on eg. Windows 10, download ```prepare-disk-ventoy.sh``` and ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```.
    
    You will need to modify params inside ```prepare-disk-ventoy.sh``` (see corresponding section below).
    
 ## Azure GenV2 image with VMware Photon OS
    The step-by-step-guide in https://github.com/dcasota/azure-scripts#photon-os-on-azure---scripts explains how to upload Photon OS on Azure and store it as a GenV2 image.
    Download and run https://github.com/dcasota/azure-scripts/blob/master/PhotonOS/create-AzImage-PhotonOS.ps1 to create an Azure GenV2 image. 
+   
+   As a result, you should get an Azure Photon OS image eg. 4.0 rev2.
+   
+   ![ESXi7ShellOnAzure](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ph4rev2image.png)
    
 ## Create a customized ESXi 7 ISO image
    The Azure virtual machine nic adapters type is Mellanox ConnectX-4. The standard ESXi7 ISO image contains adapters drivers however the network functionality doesn't work yet.
