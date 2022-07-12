@@ -42,7 +42,7 @@ See https://github.com/dcasota/vesxi-on-azure-scripts/wiki/Work-in-Progress
    This step of ESXi ISO image customization is processed to make use of newer Mellanox adapter driver versions.
 
    For the ESXi ISO image customization,
-   - download the ESXi-Customizer from github.com/VFrontDe/ESXi-Customizer-PS
+   - download the ESXi-Customizer from https://www.github.com/VFrontDe/ESXi-Customizer-PS
    - run the ESXi Customizer (```C:\ESXi-Customizer-PS-v2.8.1.ps1 -ozip -v70```) to download the standard ESXi image
    - download the latest Mellanox drivers eg. https://customerconnect.vmware.com/en/downloads/details?downloadGroup=DT-ESXI70-MELLANOX-NMLX5_CORE-419711&productId=974
      and unzip it to a directory eg. c:\driver-offline-bundle70.    
