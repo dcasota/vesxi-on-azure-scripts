@@ -7,10 +7,12 @@ It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://
 
 # Getting started  
 
-  Prerequisites: You need an Azure account. The lab scripts have been tested on a MS Windows client with installed Powershell.
+  Prerequisite: You need an Azure account with with Virtual Machine contributor role.
   
   1. Create an Azure GenV2 image of VMware Photon OS using [create-AzImage-PhotonOS.ps1](https://github.com/dcasota/azure-scripts/blob/master/PhotonOS/create-AzImage-PhotonOS.ps1)
   2. Provision an Azure GenV2 vm with VMware ESXi using [create-AzVM-vESXi7.ps1](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/create-AzVM-vESXi7.ps1)
+
+  The lab scripts have been tested on a MS Windows client with installed Powershell.
 
   In the actual development phase, the ESXi setup stops as no network adapter can be found.
 
@@ -29,7 +31,10 @@ It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://
 ## ```create-AzVM-vESXi.ps1```
    Run the script ```create-AzVM-vESXi7.ps1```.
    
-   You can specify params value ResourceGroupName, VMName, etc. The default virtual machine type offering used is a Standard_F4s_v2 offering with 4 vCPU, 8GB RAM, Premium Disk Support and 32GB temporary storage, and Accelerating Networking with two nics. Without Accelerated Networking, network adapters would not be presented inside the virtual machine.  
+   It uses location, resource group and virtual machine name as mandatory parameters.
+   
+   You can specify additional params value.
+   The default virtual machine type offering used is a Standard_F4s_v2 offering with 4 vCPU, 8GB RAM, Premium Disk Support and 32GB temporary storage, and Accelerating Networking with two nics. Without Accelerated Networking, network adapters would not be presented inside the virtual machine.  
    
    What the script does: 
    1) a helper Azure virtual machine with Windows Server is created.
