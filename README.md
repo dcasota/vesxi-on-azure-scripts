@@ -7,12 +7,9 @@ It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://
 
 # Getting started  
 
-  1. Download this lab project to MS Windows client with installed Powershell.
-  2. Create an Azure GenV2 image with VMware Photon OS.
-  3. Create a customized ESXi 7 ISO image.
-  4. Upload the customized ESXi ISO image to a Google drive, and in ```prepare-disk-ventoy.sh``` modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
-     Optionally, see steps to configure jump into the ESXi shell.
-  5. In ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1``` change the default params ResourceGroupName, Imagename, etc. Run the script.
+  1. This lab project uses a MS Windows client with installed Powershell and an Azure account.
+  2. Create an Azure GenV2 image of VMware Photon OS.
+  3. Run ```create-AzVM-vESXi7.ps1```.
 
   In the actual development phase, the ESXi setup stops as no network adapter can be found.
 
@@ -21,13 +18,9 @@ It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://
 ## MS Windows client with installed Powershell  
 
    This lab uses a laptop with installed
-   - MS Powershell, Azure Powershell, Azure CLI
-   - VMware PowerCLI
-   - ESXi Customizer
+   - MS Powershell, Azure Powershell
    
-   To make the lab run on eg. Windows 10, download ```prepare-disk-ventoy.sh``` and ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```.
-   
-   You will need to modify params inside ```prepare-disk-ventoy.sh``` (see corresponding section below).
+   To make the lab run on eg. Windows 10, download ```create-AzVM-vESXi7.ps1```.
    
 ## Azure GenV2 image with VMware Photon OS
    The step-by-step-guide in https://github.com/dcasota/azure-scripts#photon-os-on-azure---scripts explains how to upload Photon OS on Azure and store it as a GenV2 image.
@@ -36,139 +29,27 @@ It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://
    As a result, you should get an Azure Photon OS image eg. 4.0 rev2.
    
    ![ph4rev2image](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ph4rev2image.png)
-   
-## Create a customized ESXi 7 ISO image
-   The Azure virtual machine nic adapters type is Mellanox ConnectX-4. The standard ESXi7 ISO image contains adapters drivers however the network functionality doesn't work yet.
-   This step of ESXi ISO image customization is processed to make use of newer Mellanox adapter driver versions.
 
-   For the ESXi ISO image customization,
-   - download the ESXi-Customizer from https://www.github.com/VFrontDe/ESXi-Customizer-PS
-   - run the ESXi Customizer (eg ```.\ESXi-Customizer-PS-v2.8.1.ps1 -ozip -v70```) to download the standard ESXi image
-
-     ![esxcustomizeroutput1](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/esxcustomizeroutput1.png)
-
-   - download the latest Mellanox drivers eg. https://customerconnect.vmware.com/en/downloads/details?downloadGroup=DT-ESXI70-MELLANOX-NMLX5_CORE-419711&productId=974
-     and unzip it to a directory eg. c:\driver-offline-bundle70.    
-   - Here's a powershell script sample which creates a customized iso. Change the variables as needed.
-      ```
-      $ESXiZipFileName="ESXi-7.0U3e-19898904-standard"
-      $ESXiZipFile="C:/"+$ESXiZipFileName+".zip"
-      $ImageProfileName="ESXi-v70-Lab"
-      $DepotFolder="C:\driver-offline-bundle70"
-      $VendorName="fill in a name"
-      $ISOFile="C:\ESXi70-customized.iso"
+## ```create-AzVM-vESXi.ps1```
+   Run the script ```create-AzVM-vESXi7.ps1```.
    
-      add-esxsoftwaredepot $ESXiZipFile
-      new-esximageprofile -CloneProfile $ESXiZipFileName -Name $ImageProfileName -Vendor $VendorName
-      set-esximageprofile -imageprofile $ImageProfileName -AcceptanceLevel PartnerSupported
-
-      # Add newer Mellanox nmlx5 driver
-      Add-EsxSoftwareDepot -DepotUrl $DepotFolder\Mellanox-nmlx5_4.19.71.1-1OEM.700.1.0.15525992_17850538-package\Mellanox-nmlx5_4.19.71.1-1OEM.700.1.0.15525992_17850538.zip
-      Add-EsxSoftwarePackage -ImageProfile $ImageProfileName -SoftwarePackage nmlx5-core,nmlx5-rdma
-
-      Export-EsxImageProfile -ImageProfile $ImageProfileName -ExportToIso -NoSignatureCheck -force -FilePath $ISOFile
-      ```
+   You can specify params value ResourceGroupName, VMName, etc. The default virtual machine type offering used is a Standard_F4s_v2 offering with 4 vCPU, 8GB RAM, Premium Disk Support and 32GB temporary storage, and Accelerating Networking with two nics. Without Accelerated Networking, network adapters would not be presented inside the virtual machine.  
    
-      ![ESXicustomizeroutput2](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ESXicustomizeroutput2.png)    
-      
-     In the target folder you should find the iso eg. ESXi70-customized.iso.
-
-## ```prepare-disk-ventoy.sh```
-   This step is a preparation before running ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```. In short, we need to make the customized ESXi ISO image available on an online drive share.
+   What the script does: 
+   1) a helper Azure virtual machine with Windows Server is created.
+      From the Github repo https://github.com/VFrontDe/ESXi-Customizer-PS of Andreas Peetz, the ESXi Customizer script is downloaded.
+      It dynamically creates a customized ESXi iso, and the iso is uploaded as Azure blob. The helper VM is deallocated.  
+   2) an Azure virtual machine from a Photon OS image is created. The image must have been created before. The virtual machine gets an additional data disk.
+      Inside Photon OS, Ventoy from https://github.com/ventoy/Ventoy is downloaded and installed as bootloader on the data disk.
+      The customized ESXi iso is downloaded into the Ventoy partition. Some Ventoy injection and com redirection tecniques are applied. 
+   3) The data disk becomes the os disk. The virtual machine boots.
    
-   As online drive share from where the customized ESXi ISO image will be downloaded, the meccano in ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1``` uses a Google drive. So far, this is the only solution the script supports.
+   After the script has successfully finished, enter the Azure virtual machine serial console of the newly created vm.
    
-   Upload the customized ESXi ISO image eg. "ESXi70-customized.iso" to your Google drive.
-   Inside the script ```prepare-disk-ventoy.sh```, modify the params ISOFILENAME and GOOGLEDRIVEFILEID.
-   
-   The implementation uses the open source product Ventoy which includes an easy method to start an ISO setup in an Azure virtual machine.
-   In the context of Azure, serial console redirection must be explicitly configured. A basic serial console redirection configuration method is included as well.
-   
-   To support login into the ESXi shell, modify the script by extending the ventoy-json creation code snippet below. The following sample adds a customized isolinux.cfg and boot.cfg of an ESXi 7.0.3 iso.
-   ```
-cat << EOF3 >> ./isolinux.cfg
-DEFAULT menu.c32
-serial 0 115200
-serial 1 115200
-MENU TITLE ESXi-v70-Lab Boot Menu
-NOHALT 1
-PROMPT 0
-TIMEOUT 80
-LABEL install
-  KERNEL mboot.c32
-  APPEND -c boot.cfg
-  MENU LABEL ESXi-v70-Lab ^Installer
-LABEL hddboot
-  LOCALBOOT 0x80
-  MENU LABEL ^Boot from local disk
-EOF3
-
-cat << EOF2 >> ./boot.cfg
-bootstate=0
-title=Loading ESXi installer
-timeout=5
-prefix=
-kernel=/b.b00
-kernelopt=runweasel cdromBoot tty1Port=com1 tty2Port=com1
-modules=/jumpstrt.gz --- /useropts.gz --- /features.gz --- /k.b00 --- /uc_intel.b00 --- /uc_amd.b00 --- /uc_hygon.b00 --- /procfs.b00 --- /vmx.v00 --- /vim.v00 --- /tpm.v00 --- /sb.v00 --- /s.v00 --- /nmlx5cor.v00 --- /nmlx5rdm.v00 --- /atlantic.v00 --- /bnxtnet.v00 --- /bnxtroce.v00 --- /brcmfcoe.v00 --- /elxiscsi.v00 --- /elxnet.v00 --- /i40en.v00 --- /iavmd.v00 --- /icen.v00 --- /igbn.v00 --- /ionic_en.v00 --- /irdman.v00 --- /iser.v00 --- /ixgben.v00 --- /lpfc.v00 --- /lpnic.v00 --- /lsi_mr3.v00 --- /lsi_msgp.v00 --- /lsi_msgp.v01 --- /lsi_msgp.v02 --- /mtip32xx.v00 --- /ne1000.v00 --- /nenic.v00 --- /nfnic.v00 --- /nhpsa.v00 --- /nmlx4_co.v00 --- /nmlx4_en.v00 --- /nmlx4_rd.v00 --- /ntg3.v00 --- /nvme_pci.v00 --- /nvmerdma.v00 --- /nvmetcp.v00 --- /nvmxnet3.v00 --- /nvmxnet3.v01 --- /pvscsi.v00 --- /qcnic.v00 --- /qedentv.v00 --- /qedrntv.v00 --- /qfle3.v00 --- /qfle3f.v00 --- /qfle3i.v00 --- /qflge.v00 --- /rste.v00 --- /sfvmk.v00 --- /smartpqi.v00 --- /vmkata.v00 --- /vmkfcoe.v00 --- /vmkusb.v00 --- /vmw_ahci.v00 --- /bmcal.v00 --- /crx.v00 --- /elx_esx_.v00 --- /btldr.v00 --- /esx_dvfi.v00 --- /esx_ui.v00 --- /esxupdt.v00 --- /tpmesxup.v00 --- /weaselin.v00 --- /esxio_co.v00 --- /loadesx.v00 --- /lsuv2_hp.v00 --- /lsuv2_in.v00 --- /lsuv2_ls.v00 --- /lsuv2_nv.v00 --- /lsuv2_oe.v00 --- /lsuv2_oe.v01 --- /lsuv2_oe.v02 --- /lsuv2_sm.v00 --- /native_m.v00 --- /qlnative.v00 --- /trx.v00 --- /vdfs.v00 --- /vmware_e.v00 --- /vsan.v00 --- /vsanheal.v00 --- /vsanmgmt.v00 --- /tools.t00 --- /xorg.v00 --- /gc.v00 --- /imgdb.tgz --- /imgpayld.tgz
-build=7.0.3-0.5.18825058
-updated=0
-EOF2
-  
-cat << EOF1 >> ./ventoy.json
-{
-    "theme_legacy": {
-        "display_mode": "serial",
-        "serial_param": "--unit=0 --speed=115200 --word=8 --parity=no --stop=1"
-    },
-    "theme_uefi": {
-        "display_mode": "serial",
-        "serial_param": "--unit=0 --speed=115200 --word=8 --parity=no --stop=1"
-    },
-    "conf_replace_legacy": [
-        {
-            "iso": "/ESXi70-customized.iso",
-            "org": "/boot.cfg",
-            "new": "/ventoy/boot.cfg"
-        },
-        {
-            "iso": "/ESXi70-customized.iso",
-            "org": "/isolinux.cfg",
-            "new": "/ventoy/isolinux.cfg"
-        }
-    ],
-    "conf_replace_uefi": [
-        {
-            "iso": "/ESXi70-customized.iso",
-            "org": "/EFI/BOOT/boot.cfg",
-            "new": "/ventoy/boot.cfg"
-        },
-        {
-            "iso": "/ESXi70-customized.iso",
-            "org": "/isolinux.cfg",
-            "new": "/ventoy/isolinux.cfg"
-        }
-    ]	
-}
-EOF1
-```
-
-## ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```
-   Change the default params ResourceGroupName, Imagename, etc. and run the script ```create-AzVM-vESXi7_usingAzImage-PhotonOS.ps1```.
-   
-   What the script does:
-   The virtual machine type offering used is a Standard_E4s_v3 offering with 4vCPU, 32GB RAM, Premium Disk Support and 2x 16GB storage, and Accelerating Networking with two nics. The offering actually includes ethernet adapters Mellanox Technologies MT27710 Family [ConnectX-4 Lx Virtual Function] [15b3:1016].
-   Without Accelerated Networking, network adapters would not be presented inside the virtual machine.  
+ ## First start  
+ 
+   On the screen you see 'secure boot disabled'. Press Enter.
     
-   From the Azure GenV2 image, VMware Photon OS is installed first as sort of helper os for the ESXi boot medium preparation. The script processes following steps:
-   On your MS Windows client: check prerequisites, if necessary install Azure Powershell and AzureCLI, and Azure login by device login method (twice!)
-   On your Azure subscription:
-   1. Check Azure image, create a resource group, storage account, storage container, network security group and virtual network
-   2. create network interface, two nics, one with a public IP address
-   3. create the vm with Photon OS as os disk, and a data disk processed with cloud-init custom data from ```$Bashfilename```.
-      See ```prepare-disk-ventoy.sh``` for detailed information.
-    
-   Enter the Azure virtual machine serial console of the newly created vm. It boots first into Photon OS. When the login prompt appears, do nothing. It boots automatically into the Ventoy menu. Press enter to start ESXi setup.
    If you have configured 'jump into ESXi Shell', the ESXi Shell prompt appears. Enter username and password. Without any kickstart, enter 'root' as username and press enter.
 
 # Findings
@@ -244,10 +125,6 @@ regtype=native,bus=pci,id=15b3101f15b30016......,driver=nmlx5_core
 ```
 
 # Archive
-  The repo contains several archived scripts.
-  - ```create-AzVM-vESXi_usingAzImage-PhotonOS.ps1```, ```create-AzVM-vESXi_usingLocalFile-PhotonOS.ps1```
-  - ```prepare-disk-bios.sh```, ```prepare-disk-efi.sh```
-  - ```create-customizedESXi-iso.ps1```
- 
+  The repo contains several archived scripts. See https://github.com/dcasota/vesxi-on-azure-scripts/archive
 
 Suggestions and issues discussions about the homelab project are welcome.
