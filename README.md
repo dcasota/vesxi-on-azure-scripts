@@ -44,7 +44,7 @@ It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://
    
  ## First start  
  
-   On the screen you see 'secure boot disabled'. Press Enter.
+   On the screen you see 'Secure Boot Disabled'. Press Enter. Now you see '<4>TCG2 protocol not available: 800000000000000e'. Just wait a minute.
     
    If you have configured 'jump into ESXi Shell', the ESXi Shell prompt appears. Enter username and password. Without any kickstart, enter 'root' as username and press enter.
 
