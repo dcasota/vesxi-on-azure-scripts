@@ -7,28 +7,24 @@ It is not yet finished. Use it at your own risk. See [Work-in-Progress](https://
 
 # Getting started  
 
-  1. This lab project uses a MS Windows client with installed Powershell and an Azure account.
-  2. Create an Azure GenV2 image of VMware Photon OS.
-  3. Run ```create-AzVM-vESXi7.ps1```.
+  Prerequisites: You need an Azure account. The lab scripts have been tested on a MS Windows client with installed Powershell.
+  
+  1. Create an Azure GenV2 image of VMware Photon OS using [create-AzImage-PhotonOS.ps1](https://github.com/dcasota/azure-scripts/blob/master/PhotonOS/create-AzImage-PhotonOS.ps1)
+  2. Provision an Azure GenV2 vm with VMware ESXi using [create-AzVM-vESXi7.ps1](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/create-AzVM-vESXi7.ps1)
 
   In the actual development phase, the ESXi setup stops as no network adapter can be found.
 
   ![NoNetworkAdapterOnESXi7](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/NoNetworkAdapterESXi7.png)
 
-## MS Windows client with installed Powershell  
+## Azure GenV2 image with VMware Photon OS  
 
-   This lab uses a laptop with installed
-   - MS Powershell, Azure Powershell
+   Download and run [create-AzImage-PhotonOS.ps1](https://github.com/dcasota/azure-scripts/blob/master/PhotonOS/create-AzImage-PhotonOS.ps1) to create an Azure GenV2 image.
    
-   To make the lab run on eg. Windows 10, download ```create-AzVM-vESXi7.ps1```.
-   
-## Azure GenV2 image with VMware Photon OS
-   The step-by-step-guide in https://github.com/dcasota/azure-scripts#photon-os-on-azure---scripts explains how to upload Photon OS on Azure and store it as a GenV2 image.
-   Download and run https://github.com/dcasota/azure-scripts/blob/master/PhotonOS/create-AzImage-PhotonOS.ps1 to create an Azure GenV2 image. 
-   
-   As a result, you should get an Azure Photon OS image eg. 4.0 rev2.
+   The step-by-step-guide in [photon-os-on-azure---scripts](https://github.com/dcasota/azure-scripts#photon-os-on-azure---scripts) explains how to upload Photon OS on Azure and store it as a GenV2 image. As a result, you should get an Azure Photon OS image eg. 4.0 rev2.
    
    ![ph4rev2image](https://github.com/dcasota/vesxi-on-azure-scripts/blob/master/ph4rev2image.png)
+   
+   The script tries to install Azure powershell if needed.
 
 ## ```create-AzVM-vESXi.ps1```
    Run the script ```create-AzVM-vESXi7.ps1```.
