@@ -31,6 +31,7 @@
 #   Version:
 #   2.0   26.07.2022   dcasota  Complete rewrite
 #   2.0.1 28.07.2022   dcasota  bugfixing ventoy.json path, Update Ventoy 1.0.79
+#   2.0.2 02.08.2022   dcasota  bugfixing example
 #
 # .PARAMETER LocationName
 #   Azure location name where to create or lookup the resource group
@@ -109,7 +110,7 @@
 #
 #
 # .EXAMPLE
-#    ./create-AzVM-ESXi.ps1 -ResourceGroupName ESXiLab -Location switzerlandnorth -VMName ESXi01
+#    ./create-AzVM-vESXi7.ps1 -ResourceGroupName ESXiLab -Location switzerlandnorth -VMName ESXi01
 #
 #>
 
