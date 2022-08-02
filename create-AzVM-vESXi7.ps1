@@ -30,6 +30,7 @@
 #   Author:  Daniel Casota
 #   Version:
 #   2.0   26.07.2022   dcasota  Complete rewrite
+#   2.0.1 28.07.2022   dcasota  bugfixing ventoy.json path, Update Ventoy 1.0.79
 #
 # .PARAMETER LocationName
 #   Azure location name where to create or lookup the resource group
@@ -429,18 +430,18 @@ cd /tmp
 tdnf install -y tar wget curl parted dosfstools xz
 
 # download and install Ventoy
-curl -O -J -L https://github.com/ventoy/Ventoy/releases/download/v1.0.78/ventoy-1.0.78-linux.tar.gz
-tar -xzvf /tmp/ventoy-1.0.78-linux.tar.gz
-cd /tmp/ventoy-1.0.78
-echo y > /tmp/ventoy-1.0.78/y
-echo y >> /tmp/ventoy-1.0.78/y
-cat /tmp/ventoy-1.0.78/y | /tmp/ventoy-1.0.78/Ventoy2Disk.sh -I -s -g $DEVICE
+curl -O -J -L https://github.com/ventoy/Ventoy/releases/download/v1.0.79/ventoy-1.0.79-linux.tar.gz
+tar -xzvf /tmp/ventoy-1.0.79-linux.tar.gz
+cd /tmp/ventoy-1.0.79
+echo y > /tmp/ventoy-1.0.79/y
+echo y >> /tmp/ventoy-1.0.79/y
+cat /tmp/ventoy-1.0.79/y | /tmp/ventoy-1.0.79/Ventoy2Disk.sh -I -s -g $DEVICE
 
 # mount ventoy partition 1
 mkdir /tmp/exfat
-xz -d -v /tmp/ventoy-1.0.78/tool/x86_64/mount.exfat-fuse.xz
-chmod a+x /tmp/ventoy-1.0.78/tool/x86_64/mount.exfat-fuse
-/tmp/ventoy-1.0.78/tool/x86_64/mount.exfat-fuse ${DEVICE}1 /tmp/exfat
+xz -d -v /tmp/ventoy-1.0.79/tool/x86_64/mount.exfat-fuse.xz
+chmod a+x /tmp/ventoy-1.0.79/tool/x86_64/mount.exfat-fuse
+/tmp/ventoy-1.0.79/tool/x86_64/mount.exfat-fuse ${DEVICE}1 /tmp/exfat
 
 # download ISO to /tmp/exfat and mount it
 cd /tmp/exfat
@@ -468,7 +469,7 @@ cp /tmp/exfat/ventoy/isolinux.cfg /tmp/exfat/ventoy/isolinux.cfg.0
 #    apply setting B)
 #       - Redirect tty2port to serial port com1
 #       As result the setup boots into DCUI
-sed "s/boot.cfg/boot.cfg text nofb tty1Port=com1 tty2Port=com1 logPort=none gdbPort=none/" /tmp/exfat/ventoy/isolinux.cfg.0 > /tmp/exfat/ventoy/isolinux.cfg
+sed "s/boot.cfg/boot.cfg text nofb ignoreHeadless=TRUE tty2Port=com1 logPort=none gdbPort=none/" /tmp/exfat/ventoy/isolinux.cfg.0 > /tmp/exfat/ventoy/isolinux.cfg
 
 # Specify serial ports in boot.cfg
 cp $ESXICD/boot.cfg /tmp/exfat/ventoy/boot.cfg
@@ -479,7 +480,7 @@ sed "s/kernelopt=runweasel cdromBoot/kernelopt=runweasel cdromBoot text nofb tty
 
 
 # Ventoy injection file 
-cat << EOF1 >> /tmp/exfat/ventoy.json
+cat << EOF1 >> /tmp/exfat/ventoy/ventoy.json
 {
     "theme_legacy": {
         "display_mode": "serial",
@@ -491,24 +492,24 @@ cat << EOF1 >> /tmp/exfat/ventoy.json
     },
     "conf_replace_legacy": [
         {
-            "iso": "/ESXi70-customized.iso",
+            "iso": "/ESXi-customized.iso",
             "org": "/boot.cfg",
             "new": "/ventoy/boot.cfg"
         },
         {
-            "iso": "/ESXi70-customized.iso",
+            "iso": "/ESXi-customized.iso",
             "org": "/isolinux.cfg",
             "new": "/ventoy/isolinux.cfg"
         }
     ],
     "conf_replace_uefi": [
         {
-            "iso": "/ESXi70-customized.iso",
+            "iso": "/ESXi-customized.iso",
             "org": "/EFI/BOOT/boot.cfg",
             "new": "/ventoy/boot.cfg"
         },
         {
-            "iso": "/ESXi70-customized.iso",
+            "iso": "/ESXi-customized.iso",
             "org": "/isolinux.cfg",
             "new": "/ventoy/isolinux.cfg"
         }
@@ -812,6 +813,11 @@ if (-not ($VM))
 	    Set-AzVMBootDiagnostic -VM $VM -Enable -ResourceGroupName $ResourceGroupName -StorageAccountName $StorageAccountName		
         Update-AzVM -VM $VM -ResourceGroupName $ResourceGroupName
     }
+    else
+    {
+        write-Output "Error: Virtual machine hasn't been created."
+        break
+    }
 }
 
 [Microsoft.Azure.Commands.Compute.Models.PSVirtualMachine]$VM = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName -ErrorAction SilentlyContinue
@@ -849,7 +855,6 @@ if ($VM)
 	start-sleep 20
     Remove-AzVMExtension -ResourceGroupName $ResourceGroupName -VMName $VMName -Name $ExtensionType -force -ErrorAction SilentlyContinue
 
-	# Make sure the VM is stopped but not deallocated so you can detach/attach disk
 	Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Stayprovisioned -Force
 	# Save Photon OS Disk name
 	$PhotonDiskName=(get-azvm -ResourceGroupName $resourceGroupName -Name $vmName).StorageProfile.OSdisk.Name
@@ -862,7 +867,6 @@ if ($VM)
 	$VirtualMachine = Get-AzVm -ResourceGroupName $resourceGroupName -Name $vmName
 	Set-AzVMOSDisk -VM $VirtualMachine -ManagedDiskId $sourceDisk.Id -Name $sourceDisk.Name
 	Update-AzVM -ResourceGroupName $resourceGroupName -VM $VirtualMachine
-	Stop-AzVM -ResourceGroupName $resourceGroupName -Name $vmName -Force
 
 	# Attach Photon OS disk as second disk
 	# $sourceDisk = Get-AzDisk -ResourceGroupName $resourceGroupName  -DiskName $PhotonDiskName
